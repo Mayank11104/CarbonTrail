@@ -1,0 +1,52 @@
+# ─── Dependencies ───
+node_modules/
+
+# ─── Build Output ───
+dist/
+build/
+
+# ─── Environment Variables ───
+.env
+.env.local
+.env.*.local
+
+# ─── IDE / Editor ───
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ─── OS Files ───
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ─── Logs ───
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ─── Testing ───
+coverage/
+test-results/
+playwright-report/
+
+# ─── Firebase ───
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# ─── Docker ───
+docker-compose.override.yml
+
+# ─── Misc ───
+*.local
+*.tsbuildinfo
