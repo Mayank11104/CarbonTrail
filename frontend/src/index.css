@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* ─── Design System: CarbonTrail ─── */
+:root {
+  /* Palette */
+  --forest: #1B4332;
+  --sage: #40916C;
+  --mint: #95D5B2;
+  --clay: #C07B52;
+  --sand: #E8D5B0;
+  --fog: #F5F3EF;
+  --char: #1C1C1E;
+  --amber: #D97706;
+  --coral: #E05252;
+
+  /* Typography */
+  --font-display: 'DM Sans', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--char);
+  background-color: var(--fog);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
