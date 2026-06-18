@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { loginWithEmail, registerWithEmail, loginWithGoogle } from '../api/auth';
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -24,6 +25,17 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Sync mode when modal opens and clear form for best UX
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      setErrors({});
+      setAuthError(null);
+      setShowPassword(false);
+      setFormData({ name: '', email: '', password: '' });
+    }
+  }, [isOpen, initialMode]);
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -32,6 +44,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -69,28 +82,47 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
     if (!validate()) return;
 
     setIsLoading(true);
-    // TODO: Wire up Firebase Auth here
-    console.log(`${mode} with:`, formData);
+    let result;
+    if (mode === 'login') {
+      result = await loginWithEmail(formData.email, formData.password);
+    } else {
+      result = await registerWithEmail(formData.name, formData.email, formData.password);
+    }
 
-    // Simulate network delay for now
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+    setIsLoading(false);
+    
+    if (result.error) {
+      setAuthError(result.error);
+    } else {
+      // Auth successful
+      onClose();
+    }
   };
 
   const handleGoogleSignIn = async () => {
+    setAuthError(null);
     setIsLoading(true);
-    // TODO: Wire up Firebase Google Auth
-    console.log('Google Sign-In initiated');
-    setTimeout(() => setIsLoading(false), 1500);
+    
+    const result = await loginWithGoogle();
+    
+    setIsLoading(false);
+    
+    if (result.error) {
+      setAuthError(result.error);
+    } else {
+      // Auth successful
+      onClose();
+    }
   };
 
   const switchMode = useCallback(() => {
     setMode((prev) => (prev === 'login' ? 'signup' : 'login'));
     setErrors({});
+    setAuthError(null);
     setShowPassword(false);
   }, []);
 
@@ -178,6 +210,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="px-8 pb-3">
+              {authError && (
+                <div className="mb-4 p-3 rounded-lg bg-[#E05252]/10 border border-[#E05252]/20 text-[#E05252] text-[13px]" style={{ fontFamily: "var(--font-body)" }}>
+                  {authError.replace('Firebase: ', '')}
+                </div>
+              )}
+              
               <div className="space-y-3">
                 {/* Name field (signup only) */}
                 <AnimatePresence mode="popLayout">

@@ -27,9 +27,10 @@ The project is structured as a modern, decoupled monorepo:
 *   **Authentication**: Firebase Auth
 
 ### Quality Assurance & Testing
-A comprehensive three-layer testing strategy ensures reliability and prevents regressions:
-*   **Unit & Integration Tests**: Vitest + React Testing Library (with v8 coverage).
-*   **End-to-End (E2E) Tests**: Playwright for full browser automation and critical user journey validation.
+A comprehensive testing strategy ensures reliability across the entire stack:
+*   **Frontend Unit & Integration Tests**: Vitest + React Testing Library (with v8 coverage).
+*   **Frontend End-to-End (E2E) Tests**: Playwright for full browser automation.
+*   **Backend API Testing**: Vitest + Supertest with mocked Firebase Admin to securely and rapidly test Express routes without network overhead.
 
 ## Development Progress
 
@@ -41,16 +42,16 @@ A comprehensive three-layer testing strategy ensures reliability and prevents re
 
 ### Phase 2: Authentication & Testing Infrastructure (Completed)
 *   Scaffolded the `users` feature domains across both frontend and backend.
-*   Built a robust, accessible, and animated Authentication Modal (supporting Login and Registration states, form validation, and Google Sign-In preparation).
-*   Established the testing environments (Vitest and Playwright).
-*   Achieved 100% passing status on initial test suites covering the Authentication Modal and Landing Page E2E flows.
-*   Standardized version control configurations across all environments.
+*   Built a robust, accessible, and animated Authentication Modal.
+*   Established the frontend testing environments (Vitest and Playwright) with 100% passing tests.
+*   **Successfully integrated Firebase Authentication (Client SDK on React, Admin SDK on Node.js/Express).**
+*   **Implemented secure JWT token verification middleware.**
+*   **Established backend testing infrastructure using Vitest and Supertest.**
 
-### Phase 3: Backend Integration & AI Engine (Next Steps)
-*   Implement Firebase Authentication.
-*   Build out the Express backend services.
+### Phase 3: Dashboard & AI Engine (Next Steps)
+*   Develop the core dashboard and data logging interfaces for authenticated users.
 *   Integrate Vertex AI and Firebase Genkit for the personalized AI Coach.
-*   Develop the core dashboard and data logging interfaces.
+*   Implement data storage logic (Firestore/PostgreSQL) for user carbon logs.
 
 ## Running the Application Locally
 
@@ -76,4 +77,6 @@ A comprehensive three-layer testing strategy ensures reliability and prevents re
 *   `npm test`: Run unit and integration tests.
 *   `npm run test:coverage`: Generate a test coverage report.
 *   `npm run test:e2e`: Execute Playwright end-to-end browser tests.
-*   `npm run test:all`: Run the complete test suite.
+
+### Testing Commands (Backend)
+*   `npm test`: Run integration tests against the Express API.

@@ -3,8 +3,12 @@ import { motion } from 'framer-motion';
 import {
   Leaf, TrendingDown, ArrowRight, ScanLine, Sparkles,
   Train, Utensils, Zap, ShoppingBag, ChevronRight,
-  Target, MessageCircle, Flame, ArrowDownRight, TreePine, Check
+  Target, MessageCircle, Flame, ArrowDownRight, TreePine, Check,
+  LogOut
 } from 'lucide-react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../config/firebase';
+import { logoutUser } from '../features/users/api/auth';
 import AuthModal from '../features/users/components/AuthModal';
 
 /* ─── Animation Variants ─── */
@@ -62,9 +66,14 @@ const DailyRing = ({ value, max }: { value: number; max: number }) => {
 /* ─── Landing Page ─── */
 const LandingPage = () => {
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'login' | 'signup' }>({ isOpen: false, mode: 'login' });
+  const [user, loading] = useAuthState(auth);
 
   const openAuth = (mode: 'login' | 'signup') => setAuthModal({ isOpen: true, mode });
   const closeAuth = () => setAuthModal((prev) => ({ ...prev, isOpen: false }));
+  
+  const handleLogout = async () => {
+    await logoutUser();
+  };
 
   return (
     <div className="min-h-screen bg-[#F5F3EF] text-[#1C1C1E] selection:bg-[#95D5B2]/30">
@@ -82,10 +91,28 @@ const LandingPage = () => {
             <a href="#insights" className="hover:text-[#1B4332] transition-colors duration-200">AI Insights</a>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => openAuth('login')} className="hidden sm:block text-sm font-medium text-[#1C1C1E]/45 hover:text-[#1C1C1E] transition-colors">Log in</button>
-            <button onClick={() => openAuth('signup')} className="text-sm font-semibold bg-[#1B4332] text-white px-5 py-2.5 rounded-full hover:bg-[#1B4332]/90 transition-all active:scale-[0.97] shadow-sm">
-              Get Started
-            </button>
+            {loading ? (
+              <div className="w-20 h-8 animate-pulse bg-[#E8D5B0]/30 rounded-full" />
+            ) : user ? (
+              <>
+                <span className="hidden sm:block text-sm font-medium text-[#1C1C1E]/60 mr-2">
+                  Hi, {user.displayName || 'Eco Warrior'}
+                </span>
+                <button onClick={handleLogout} className="text-sm font-medium text-[#1C1C1E]/45 hover:text-[#E05252] transition-colors flex items-center gap-1.5">
+                  <LogOut className="w-4 h-4" />
+                </button>
+                <button className="text-sm font-semibold bg-[#1B4332] text-white px-5 py-2.5 rounded-full hover:bg-[#1B4332]/90 transition-all active:scale-[0.97] shadow-sm ml-2">
+                  Dashboard
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => openAuth('login')} className="hidden sm:block text-sm font-medium text-[#1C1C1E]/45 hover:text-[#1C1C1E] transition-colors">Log in</button>
+                <button onClick={() => openAuth('signup')} className="text-sm font-semibold bg-[#1B4332] text-white px-5 py-2.5 rounded-full hover:bg-[#1B4332]/90 transition-all active:scale-[0.97] shadow-sm">
+                  Get Started
+                </button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -126,10 +153,17 @@ const LandingPage = () => {
               custom={3} variants={fadeUp} initial="hidden" animate="visible"
               className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3"
             >
-              <button onClick={() => openAuth('signup')} className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-[#1B4332] text-white px-7 py-3.5 lg:px-8 lg:py-4 rounded-full text-[14px] lg:text-[16px] font-semibold shadow-md hover:shadow-xl hover:shadow-[#1B4332]/10 transition-all duration-300 active:scale-[0.97]">
-                Start your trail
-                <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
-              </button>
+              {user ? (
+                <button className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-[#1B4332] text-white px-7 py-3.5 lg:px-8 lg:py-4 rounded-full text-[14px] lg:text-[16px] font-semibold shadow-md hover:shadow-xl hover:shadow-[#1B4332]/10 transition-all duration-300 active:scale-[0.97]">
+                  Go to Dashboard
+                  <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
+                </button>
+              ) : (
+                <button onClick={() => openAuth('signup')} className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-[#1B4332] text-white px-7 py-3.5 lg:px-8 lg:py-4 rounded-full text-[14px] lg:text-[16px] font-semibold shadow-md hover:shadow-xl hover:shadow-[#1B4332]/10 transition-all duration-300 active:scale-[0.97]">
+                  Start your trail
+                  <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
+                </button>
+              )}
               <button className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-white border border-[#E8D5B0] text-[#1C1C1E] px-7 py-3.5 lg:px-8 lg:py-4 rounded-full text-[14px] lg:text-[16px] font-semibold hover:border-[#C07B52] hover:text-[#C07B52] transition-all duration-300 active:scale-[0.97] shadow-sm">
                 <ScanLine className="w-4 h-4 lg:w-5 lg:h-5" />
                 Scan a bill
@@ -432,15 +466,22 @@ const LandingPage = () => {
 
           <div className="relative">
             <h2 className="text-[22px] lg:text-[36px] font-bold mb-4 tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-              Ready to see your trail?
+              {user ? 'Continue your trail' : 'Ready to see your trail?'}
             </h2>
             <p className="text-[14px] lg:text-[18px] text-white/50 mb-8 lg:mb-10 max-w-lg mx-auto" style={{ fontFamily: "var(--font-body)" }}>
               No lectures. No guilt. Just your data, your actions, and a coach that actually gets you.
             </p>
-            <button onClick={() => openAuth('signup')} className="inline-flex items-center gap-2.5 bg-white text-[#1B4332] px-8 py-4 lg:px-10 lg:py-5 rounded-full text-[14px] lg:text-[16px] font-semibold hover:shadow-xl transition-all duration-300 active:scale-[0.97]">
-              Start for free
-              <ChevronRight className="w-4 h-4 lg:w-5 lg:h-5" />
-            </button>
+            {user ? (
+              <button className="inline-flex items-center gap-2.5 bg-white text-[#1B4332] px-8 py-4 lg:px-10 lg:py-5 rounded-full text-[14px] lg:text-[16px] font-semibold hover:shadow-xl transition-all duration-300 active:scale-[0.97]">
+                Go to Dashboard
+                <ChevronRight className="w-4 h-4 lg:w-5 lg:h-5" />
+              </button>
+            ) : (
+              <button onClick={() => openAuth('signup')} className="inline-flex items-center gap-2.5 bg-white text-[#1B4332] px-8 py-4 lg:px-10 lg:py-5 rounded-full text-[14px] lg:text-[16px] font-semibold hover:shadow-xl transition-all duration-300 active:scale-[0.97]">
+                Start for free
+                <ChevronRight className="w-4 h-4 lg:w-5 lg:h-5" />
+              </button>
+            )}
           </div>
         </motion.div>
       </section>
