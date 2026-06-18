@@ -108,7 +108,10 @@ const DashboardPage = () => {
                   {getGreeting()}, {user?.displayName?.split(' ')[0] || 'Eco Warrior'}. You're making great progress on your daily footprint.
                 </p>
                 <div className="mt-8 flex justify-center md:justify-start gap-4">
-                  <button className="bg-primary text-white font-label-md text-label-md px-8 py-4 rounded-full transition-all hover:shadow-lg hover:scale-105 active:scale-95">
+                  <button 
+                    onClick={() => setActiveLogCategory('all')}
+                    className="bg-primary text-white font-label-md text-label-md px-8 py-4 rounded-full transition-all hover:shadow-lg hover:scale-105 active:scale-95"
+                  >
                     Daily Check-in
                   </button>
                   <button className="border border-primary text-primary font-label-md text-label-md px-8 py-4 rounded-full transition-all hover:bg-primary/5 active:scale-95">
@@ -186,24 +189,55 @@ const DashboardPage = () => {
           {/* ─── Right Column ─── */}
           <section className="lg:col-span-4 flex flex-col gap-[24px]">
             
-            {/* Tactile Logging Tiles */}
+            {/* Segregated Data Tiles */}
             <div className="grid grid-cols-2 gap-4">
-              <button onClick={() => setActiveLogCategory('transport')} className="tactile-tile group rounded-lg p-6 h-40 bg-[#94D4B1] text-primary flex flex-col justify-between transition-all duration-300">
-                <Train className="w-8 h-8 self-start transition-transform group-hover:scale-110" />
-                <span className="font-label-md text-[14px] font-bold uppercase tracking-wider text-left">Transport</span>
-              </button>
-              <button onClick={() => setActiveLogCategory('food')} className="tactile-tile group rounded-lg p-6 h-40 bg-[#E8D5B0] text-[#5D4037] flex flex-col justify-between transition-all duration-300">
-                <Utensils className="w-8 h-8 self-start transition-transform group-hover:scale-110" />
-                <span className="font-label-md text-[14px] font-bold uppercase tracking-wider text-left">Food</span>
-              </button>
-              <button onClick={() => setActiveLogCategory('energy')} className="tactile-tile group rounded-lg p-6 h-40 bg-[#FFD180] text-[#E65100] flex flex-col justify-between transition-all duration-300">
-                <Zap className="w-8 h-8 self-start transition-transform group-hover:scale-110" />
-                <span className="font-label-md text-[14px] font-bold uppercase tracking-wider text-left">Energy</span>
-              </button>
-              <button onClick={() => setActiveLogCategory('shopping')} className="tactile-tile group rounded-lg p-6 h-40 bg-primary-container text-tertiary-fixed flex flex-col justify-between transition-all duration-300">
-                <ShoppingBag className="w-8 h-8 self-start transition-transform group-hover:scale-110" />
-                <span className="font-label-md text-[14px] font-bold uppercase tracking-wider text-left">Shopping</span>
-              </button>
+              <div className="rounded-lg p-6 h-40 bg-surface text-primary flex flex-col justify-between border border-outline-variant/30 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-[#94D4B1]/20 rounded-bl-full -translate-y-4 translate-x-4 pointer-events-none" />
+                <Train className="w-7 h-7 text-[#40916C]" />
+                <div>
+                  <div className="flex items-end justify-between mb-1">
+                    <span className="font-display-lg text-[24px] font-bold leading-none">4.2</span>
+                    <span className="font-label-md font-bold text-[#40916C]">40%</span>
+                  </div>
+                  <span className="font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider">Transport (kg)</span>
+                </div>
+              </div>
+
+              <div className="rounded-lg p-6 h-40 bg-surface text-[#5D4037] flex flex-col justify-between border border-outline-variant/30 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-[#E8D5B0]/30 rounded-bl-full -translate-y-4 translate-x-4 pointer-events-none" />
+                <Utensils className="w-7 h-7 text-[#C07B52]" />
+                <div>
+                  <div className="flex items-end justify-between mb-1">
+                    <span className="font-display-lg text-[24px] font-bold leading-none">3.1</span>
+                    <span className="font-label-md font-bold text-[#C07B52]">30%</span>
+                  </div>
+                  <span className="font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider">Food (kg)</span>
+                </div>
+              </div>
+
+              <div className="rounded-lg p-6 h-40 bg-surface text-[#E65100] flex flex-col justify-between border border-outline-variant/30 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-[#FFD180]/20 rounded-bl-full -translate-y-4 translate-x-4 pointer-events-none" />
+                <Zap className="w-7 h-7 text-[#D97706]" />
+                <div>
+                  <div className="flex items-end justify-between mb-1">
+                    <span className="font-display-lg text-[24px] font-bold leading-none">2.1</span>
+                    <span className="font-label-md font-bold text-[#D97706]">20%</span>
+                  </div>
+                  <span className="font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider">Energy (kg)</span>
+                </div>
+              </div>
+
+              <div className="rounded-lg p-6 h-40 bg-surface text-tertiary flex flex-col justify-between border border-outline-variant/30 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-primary-container/10 rounded-bl-full -translate-y-4 translate-x-4 pointer-events-none" />
+                <ShoppingBag className="w-7 h-7 text-[#1B4332]" />
+                <div>
+                  <div className="flex items-end justify-between mb-1">
+                    <span className="font-display-lg text-[24px] font-bold leading-none">1.0</span>
+                    <span className="font-label-md font-bold text-[#1B4332]">10%</span>
+                  </div>
+                  <span className="font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider">Shopping (kg)</span>
+                </div>
+              </div>
             </div>
 
             {/* AI Coach Card */}

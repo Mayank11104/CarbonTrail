@@ -70,6 +70,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   const openAuth = (mode: 'login' | 'signup') => setAuthModal({ isOpen: true, mode });
+
   const closeAuth = () => setAuthModal((prev) => ({ ...prev, isOpen: false }));
   
   const handleLogout = async () => {
@@ -77,7 +78,7 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-on-surface selection:bg-primary/30 relative overflow-hidden font-body-md">
+    <div className="min-h-screen text-on-surface selection:bg-primary/30 font-body-md">
       {/* ─── Ambient Background Orbs ─── */}
       <div className="mesh-gradient">
         <div className="orb w-[600px] h-[600px] bg-[#95D5B2] -top-20 -left-20" />
@@ -124,8 +125,7 @@ const LandingPage = () => {
           </div>
         </div>
       </nav>
-
-      {/* ─── Hero Section ─── */}
+      {/* ─── Hero Section ─── */}
       <section className="pt-20 lg:pt-20 pb-14 lg:pb-20 px-6">
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
 
@@ -133,7 +133,7 @@ const LandingPage = () => {
           <div className="flex-1 text-center lg:text-left">
             <motion.div
               custom={0} variants={fadeUp} initial="hidden" animate="visible"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] lg:text-[13px] font-medium mb-5 lg:mb-6"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full font-label-md text-label-md mb-5 lg:mb-6"
               style={{ backgroundColor: 'rgba(27, 67, 50, 0.06)', border: '1px solid rgba(27, 67, 50, 0.1)', color: '#40916C' }}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -142,7 +142,8 @@ const LandingPage = () => {
 
             <motion.h1
               custom={1} variants={fadeUp} initial="hidden" animate="visible"
-              className="text-[32px] sm:text-[40px] lg:text-[56px] xl:text-[64px] font-bold tracking-tight leading-[1.08] mb-4 lg:mb-6 font-display-lg"
+              className="text-[40px] lg:text-[64px] font-bold tracking-tight leading-[1.08] mb-4 lg:mb-6 font-headline-lg"
+              style={{ fontFamily: "var(--font-headline-lg)" }}
             >
               Track less.{' '}
               <span className="text-primary">Live more.</span>
@@ -150,7 +151,7 @@ const LandingPage = () => {
 
             <motion.p
               custom={2} variants={fadeUp} initial="hidden" animate="visible"
-              className="text-[15px] lg:text-[18px] mb-7 lg:mb-9 max-w-md lg:max-w-lg mx-auto lg:mx-0 leading-relaxed text-on-surface/50 font-body-md"
+              className="font-body-lg text-[18px] mb-7 lg:mb-9 max-w-md lg:max-w-lg mx-auto lg:mx-0 leading-relaxed text-on-surface-variant"
             >
               Your AI-powered coach that turns everyday habits into climate wins — with zero guilt and one simple action at a time.
             </motion.p>
@@ -160,17 +161,17 @@ const LandingPage = () => {
               className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3"
             >
               {user ? (
-                <button onClick={() => navigate('/dashboard')} className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-primary text-white px-7 py-3.5 lg:px-8 lg:py-4 rounded-full text-[14px] lg:text-[16px] font-semibold shadow-md hover:shadow-xl hover:shadow-[#1B4332]/10 transition-all duration-300 active:scale-[0.97]">
+                <button onClick={() => navigate('/dashboard')} className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-primary text-white px-7 py-3.5 lg:px-8 lg:py-4 rounded-full font-label-md text-label-md shadow-md hover:shadow-xl hover:shadow-[#1B4332]/10 transition-all duration-300 active:scale-[0.97]">
                   Go to Dashboard
                   <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
                 </button>
               ) : (
-                <button onClick={() => openAuth('signup')} className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-primary text-white px-7 py-3.5 lg:px-8 lg:py-4 rounded-full text-[14px] lg:text-[16px] font-semibold shadow-md hover:shadow-xl hover:shadow-[#1B4332]/10 transition-all duration-300 active:scale-[0.97]">
+                <button onClick={() => openAuth('signup')} className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-primary text-white px-7 py-3.5 lg:px-8 lg:py-4 rounded-full font-label-md text-label-md shadow-md hover:shadow-xl hover:shadow-[#1B4332]/10 transition-all duration-300 active:scale-[0.97]">
                   Start your trail
                   <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
                 </button>
               )}
-              <button className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-white border border-outline-variant text-on-surface px-7 py-3.5 lg:px-8 lg:py-4 rounded-full text-[14px] lg:text-[16px] font-semibold hover:border-[#C07B52] hover:text-tertiary transition-all duration-300 active:scale-[0.97] shadow-sm">
+              <button className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-white border border-outline-variant text-on-surface px-7 py-3.5 lg:px-8 lg:py-4 rounded-full font-label-md text-label-md hover:border-[#C07B52] hover:text-tertiary transition-all duration-300 active:scale-[0.97] shadow-sm">
                 <ScanLine className="w-4 h-4 lg:w-5 lg:h-5" />
                 Scan a bill
               </button>
