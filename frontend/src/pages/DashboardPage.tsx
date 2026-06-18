@@ -1,38 +1,23 @@
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  Leaf, LogOut, Flame, Train, Utensils, 
+  Zap, ShoppingBag, Users, Trophy, ChevronRight, Sparkles, User, Bike
+} from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
 import { logoutUser } from '../features/users/api/auth';
-import { useState, useEffect } from 'react';
-import { LogOut, Leaf } from 'lucide-react';
-import { motion } from 'framer-motion';
 import LogModal, { type LogCategory } from '../features/logs/components/LogModal';
-import { subscribeToDailyLogs, type CarbonLog } from '../features/logs/api/logs';
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] } }
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
-};
+import { subscribeToDailyLogs } from '../features/logs/api/logs';
 
 const DashboardPage = () => {
   const [user] = useAuthState(auth);
   const [activeLogCategory, setActiveLogCategory] = useState<LogCategory>(null);
-  const [dailyLogs, setDailyLogs] = useState<CarbonLog[]>([]);
   const [totalCarbonToday, setTotalCarbonToday] = useState(0);
-
-  const dailyBudget = 15.0; // Hardcoded daily budget (kg CO2)
 
   useEffect(() => {
     if (!user) return;
-    const unsubscribe = subscribeToDailyLogs(user.uid, (logs) => {
-      setDailyLogs(logs);
-      const total = logs.reduce((sum, log) => sum + log.carbonImpact, 0);
+    const unsubscribe = subscribeToDailyLogs(user.uid, (total) => {
       setTotalCarbonToday(total);
     });
     return () => unsubscribe();
@@ -49,164 +34,217 @@ const DashboardPage = () => {
     return 'Good evening';
   };
 
-  // Calculate progress circle properties
+  // Ring logic
+  const dailyBudget = 15;
   const progressPercent = Math.min(totalCarbonToday / dailyBudget, 1);
-  const circleCircumference = 339.29; // 2 * PI * 54
+  const radius = 110;
+  const circleCircumference = 2 * Math.PI * radius;
   const strokeDashoffset = circleCircumference * (1 - progressPercent);
 
   return (
-    <div className="min-h-screen bg-[#F5F3EF] text-[#1C1C1E] font-sans pb-20 selection:bg-[#95D5B2]/30">
+    <div className="font-body-md text-on-surface">
       
-      {/* ─── Header ─── */}
-      <header className="sticky top-0 z-40 bg-[#F5F3EF]/90 backdrop-blur-md border-b border-[#E8D5B0]/40 px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-[#1B4332] flex items-center justify-center">
-            <Leaf className="w-4 h-4 text-white" />
+      {/* ─── Ambient Background Orbs ─── */}
+      <div className="mesh-gradient">
+        <div className="orb w-[600px] h-[600px] bg-[#95D5B2] -top-20 -left-20" />
+        <div className="orb w-[500px] h-[500px] bg-[#E8D5B0] -bottom-20 -right-20" style={{ animationDelay: '-5s' }} />
+        <div className="orb w-[400px] h-[400px] bg-[#C1ECD4] top-1/2 left-1/3" style={{ animationDelay: '-10s' }} />
+      </div>
+
+      {/* ─── Navbar ─── */}
+      <nav className="fixed top-0 w-full z-50 backdrop-blur-md border-b border-outline-variant/40 bg-surface/80 transition-all duration-300">
+        <div className="max-w-[1280px] mx-auto px-[20px] md:px-[40px] h-14 lg:h-16 flex items-center justify-between w-full">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-primary flex items-center justify-center">
+              <Leaf className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-white" />
+            </div>
+            <span className="font-semibold text-base lg:text-lg tracking-tight font-display-lg text-primary">CarbonTrail</span>
           </div>
-          <span className="font-semibold text-lg tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-            CarbonTrail
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-[#1C1C1E]/60 hidden sm:block">
-            {getGreeting()}, {user?.displayName?.split(' ')[0] || 'Eco Warrior'}
-          </span>
-          <button 
-            onClick={handleLogout}
-            className="w-9 h-9 rounded-full bg-white border border-[#E8D5B0]/50 flex items-center justify-center text-[#1C1C1E]/40 hover:text-[#E05252] hover:border-[#E05252]/30 transition-all active:scale-95 shadow-sm"
-            aria-label="Log out"
-          >
-            <LogOut className="w-4 h-4 ml-0.5" />
-          </button>
-        </div>
-      </header>
-
-      {/* ─── Main Content Wrapper ─── */}
-      <main className="max-w-md lg:max-w-6xl mx-auto pt-8 px-6 lg:grid lg:grid-cols-12 lg:gap-10 space-y-8 lg:space-y-0">
-        
-        {/* ─── Left Column: Progress Ring ─── */}
-        <div className="lg:col-span-5 lg:sticky lg:top-24 h-fit">
-        <motion.section 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="bg-white/60 backdrop-blur-md rounded-3xl p-8 border border-[#E8D5B0]/50 shadow-xl shadow-[#1C1C1E]/[0.03] flex flex-col items-center relative overflow-hidden"
-        >
-          {/* Dynamic Background Gradients */}
-          <div 
-            className="absolute -top-16 -left-16 w-56 h-56 rounded-full blur-[50px] transition-colors duration-1000"
-            style={{ backgroundColor: progressPercent > 0.8 ? '#E0525220' : '#95D5B220' }}
-          />
-          <div 
-            className="absolute -bottom-16 -right-16 w-56 h-56 rounded-full blur-[50px] transition-colors duration-1000"
-            style={{ backgroundColor: progressPercent > 0.8 ? '#C07B5215' : '#40916C10' }}
-          />
-
-          <div className="relative z-10 w-full text-center mb-6 flex justify-between items-center">
-             <div className="text-left">
-               <p className="text-[12px] font-semibold uppercase tracking-wider text-[#1C1C1E]/40">Daily Budget</p>
-               <h2 className="text-[20px] font-bold mt-0.5 text-[#1C1C1E]" style={{ fontFamily: "var(--font-display)" }}>
-                 {progressPercent > 0.9 ? 'Careful today ⚠️' : 'Looking good 🌿'}
-               </h2>
-             </div>
-             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#95D5B2]/15 text-[#40916C]">
-                <span className="text-[14px]">🔥</span>
-                <span className="text-[12px] font-bold tracking-tight">7d</span>
-             </div>
+          {/* ─── Center Links ─── */}
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-on-surface/45">
+            <a href="#" className="hover:text-primary transition-colors duration-200">Dashboard</a>
+            <a href="#" className="hover:text-primary transition-colors duration-200">Impact</a>
+            <a href="#" className="hover:text-primary transition-colors duration-200">Community</a>
           </div>
 
-          {/* Dynamic Ring */}
-          <div className="relative w-52 h-52 mb-2">
-            <svg viewBox="0 0 128 128" className="w-full h-full -rotate-90 drop-shadow-md">
-              <circle cx="64" cy="64" r="54" fill="none" stroke="#E8D5B0" strokeWidth="8" opacity="0.3" />
-              <motion.circle
-                cx="64" cy="64" r="54" fill="none"
-                stroke={progressPercent > 0.8 ? '#E05252' : '#95D5B2'} 
-                strokeWidth="8" strokeLinecap="round"
-                strokeDasharray={circleCircumference}
-                initial={{ strokeDashoffset: circleCircumference }}
-                animate={{ strokeDashoffset: strokeDashoffset }}
-                transition={{ duration: 1.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pt-2">
-              <motion.span
-                key={totalCarbonToday}
-                className="text-[48px] font-bold text-[#1C1C1E] leading-none tracking-tighter"
-                style={{ fontFamily: "var(--font-display)" }}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-              >
-                {totalCarbonToday.toFixed(1)}
-              </motion.span>
-              <span className="text-[13px] text-[#1C1C1E]/40 font-semibold uppercase tracking-widest mt-1">
-                of {dailyBudget} kg
-              </span>
+          {/* ─── Right Side (User Actions) ─── */}
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:block text-sm font-medium text-on-surface/60 mr-2">
+              Hi, {user?.displayName || 'Eco Warrior'}
+            </span>
+            <button onClick={handleLogout} className="text-sm font-medium text-on-surface/45 hover:text-error transition-colors flex items-center gap-1.5" title="Log Out">
+              <LogOut className="w-4 h-4" />
+            </button>
+            <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full border-2 border-white overflow-hidden shadow-sm bg-surface-container flex items-center justify-center ml-2">
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-4 h-4 lg:w-5 lg:h-5 text-outline" />
+              )}
             </div>
           </div>
-        </motion.section>
         </div>
+      </nav>
 
-        {/* ─── Right Column: Logs & Insights ─── */}
-        <div className="lg:col-span-7 space-y-8 lg:pt-0 pt-2">
-          {/* ─── Quick Logging Tiles ─── */}
-        <section>
-          <div className="flex items-center justify-between mb-4 px-1">
-            <h3 className="text-[18px] font-bold text-[#1C1C1E]" style={{ fontFamily: "var(--font-display)" }}>Quick Log</h3>
-          </div>
-          <motion.div 
-            className="grid grid-cols-2 gap-3"
-            variants={staggerContainer}
-            initial="hidden"
-            animate="visible"
-          >
-            {[
-              { id: 'transport', icon: '🚇', label: 'Transport', color: '#40916C', bg: '#40916C' },
-              { id: 'food', icon: '🥗', label: 'Food', color: '#C07B52', bg: '#C07B52' },
-              { id: 'energy', icon: '⚡', label: 'Energy', color: '#D97706', bg: '#D97706' },
-              { id: 'shopping', icon: '🛍️', label: 'Shopping', color: '#1B4332', bg: '#1B4332' },
-            ].map((cat) => (
-              <motion.button
-                key={cat.id}
-                variants={fadeUp}
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => setActiveLogCategory(cat.id as LogCategory)}
-                className="bg-white/80 backdrop-blur-sm border border-[#E8D5B0]/40 rounded-2xl p-4 flex items-center gap-3 hover:shadow-lg hover:shadow-[#1C1C1E]/[0.02] hover:border-[#E8D5B0]/80 transition-colors"
-              >
-                <div 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-[18px] shadow-sm"
-                  style={{ backgroundColor: `${cat.bg}15` }}
-                >
-                  {cat.icon}
-                </div>
-                <span className="font-semibold text-[14px] text-[#1C1C1E]/80">{cat.label}</span>
-              </motion.button>
-            ))}
-          </motion.div>
-        </section>
-
-        {/* ─── AI Insights Placeholder ─── */}
-        <motion.section variants={fadeUp} initial="hidden" animate="visible" custom={2}>
-          <div className="border-l-[4px] border-[#40916C] bg-white rounded-r-2xl p-5 shadow-sm border-y border-r border-y-[#E8D5B0]/40 border-r-[#E8D5B0]/40 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-[#95D5B2]/10 rounded-full blur-[20px] -mr-10 -mt-10" />
-            <div className="flex items-start gap-3 relative z-10">
-              <div className="w-8 h-8 rounded-full bg-[#95D5B2]/20 flex items-center justify-center shrink-0 mt-0.5">
-                <Leaf className="w-4 h-4 text-[#40916C]" />
+      {/* ─── Main Content ─── */}
+      <main className="max-w-[1280px] mx-auto pt-32 pb-20 px-[20px] md:px-[40px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-[24px]">
+          
+          {/* ─── Left Column ─── */}
+          <section className="lg:col-span-8 flex flex-col gap-[24px]">
+            
+            {/* Hero Progress Card */}
+            <div className="glass-card rounded-xl p-10 relative overflow-hidden flex flex-col md:flex-row items-center justify-between min-h-[400px]">
+              <div className="absolute top-8 right-8 bg-secondary-container/30 px-4 py-2 rounded-full flex items-center gap-2 backdrop-blur-md">
+                <Flame className="w-5 h-5 text-[#E65100]" />
+                <span className="font-label-md text-label-md text-on-secondary-container">7-day streak</span>
               </div>
-              <div>
-                <p className="text-[13px] font-medium text-[#1C1C1E]/70 leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-                  <span className="font-bold text-[#40916C]">AI Coach:</span> You're doing great! Once you log more data, I'll generate personalized insights for you here.
+              
+              <div className="flex flex-col gap-4 text-center md:text-left z-10">
+                <h1 className="font-headline-lg text-[40px] text-primary mb-2" style={{ fontFamily: "var(--font-headline-lg)" }}>
+                  {progressPercent > 0.9 ? 'Careful today ⚠️' : 'Looking good 🌿'}
+                </h1>
+                <p className="text-on-surface-variant max-w-xs font-body-lg text-[18px]">
+                  {getGreeting()}, {user?.displayName?.split(' ')[0] || 'Eco Warrior'}. You're making great progress on your daily footprint.
                 </p>
+                <div className="mt-8 flex justify-center md:justify-start gap-4">
+                  <button className="bg-primary text-white font-label-md text-label-md px-8 py-4 rounded-full transition-all hover:shadow-lg hover:scale-105 active:scale-95">
+                    Daily Check-in
+                  </button>
+                  <button className="border border-primary text-primary font-label-md text-label-md px-8 py-4 rounded-full transition-all hover:bg-primary/5 active:scale-95">
+                    View Trends
+                  </button>
+                </div>
+              </div>
+              
+              <div className="relative w-64 h-64 flex items-center justify-center mt-12 md:mt-0 z-10">
+                <svg viewBox="0 0 256 256" className="w-full h-full -rotate-90">
+                  <circle cx="128" cy="128" r={radius} fill="transparent" stroke="var(--color-surface-container-high)" strokeWidth="12" />
+                  <motion.circle 
+                    cx="128" cy="128" r={radius} fill="transparent" 
+                    stroke="var(--color-primary)" strokeWidth="12" strokeLinecap="round"
+                    strokeDasharray={circleCircumference}
+                    initial={{ strokeDashoffset: circleCircumference }}
+                    animate={{ strokeDashoffset }}
+                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="font-display-lg text-[64px] leading-none text-primary tracking-tighter" style={{ fontFamily: "var(--font-display-lg)" }}>
+                    {Number(totalCarbonToday || 0).toFixed(1)}
+                  </span>
+                  <span className="font-label-md text-[14px] text-on-surface-variant mt-1 uppercase tracking-wider font-bold">
+                    of {dailyBudget} kg
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        </motion.section>
-        
-        </div>
 
+            {/* Sub-cards Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px]">
+              {/* Community Card */}
+              <div className="glass-card rounded-lg p-8 flex flex-col gap-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-headline-lg text-[28px] text-primary font-bold">Community</h3>
+                  <Users className="w-6 h-6 text-primary" />
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 bg-white/40 p-3 rounded-lg hover:bg-white/60 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center shrink-0">
+                      <Leaf className="w-5 h-5 text-on-secondary-container" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-label-md text-[14px] leading-tight mb-1">Sarah joined the local tree planting event</p>
+                      <p className="text-[12px] text-outline">2 hours ago</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 bg-white/40 p-3 rounded-lg hover:bg-white/60 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
+                      <Trophy className="w-5 h-5 text-on-primary-fixed" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-label-md text-[14px] leading-tight mb-1">Marcus saved 12kg of CO2 this week</p>
+                      <p className="text-[12px] text-outline">5 hours ago</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Challenge Card */}
+              <div className="glass-card rounded-lg p-8 bg-primary text-[#1C1C1E] flex flex-col justify-between hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300">
+                <div>
+                  <h3 className="font-headline-lg text-[28px] font-bold mb-2">Join a Challenge</h3>
+                  <p className="opacity-80 text-[16px]">Compete with friends to reduce your footprint. Top 10 users earn the Earth Badge.</p>
+                </div>
+                <button className="bg-[#1C1C1E] text-white font-label-md text-[14px] font-bold w-full py-4 rounded-full mt-8 hover:bg-opacity-90 transition-all active:scale-95 shadow-lg">
+                  Browse Challenges
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* ─── Right Column ─── */}
+          <section className="lg:col-span-4 flex flex-col gap-[24px]">
+            
+            {/* Tactile Logging Tiles */}
+            <div className="grid grid-cols-2 gap-4">
+              <button onClick={() => setActiveLogCategory('transport')} className="tactile-tile group rounded-lg p-6 h-40 bg-[#94D4B1] text-primary flex flex-col justify-between transition-all duration-300">
+                <Train className="w-8 h-8 self-start transition-transform group-hover:scale-110" />
+                <span className="font-label-md text-[14px] font-bold uppercase tracking-wider text-left">Transport</span>
+              </button>
+              <button onClick={() => setActiveLogCategory('food')} className="tactile-tile group rounded-lg p-6 h-40 bg-[#E8D5B0] text-[#5D4037] flex flex-col justify-between transition-all duration-300">
+                <Utensils className="w-8 h-8 self-start transition-transform group-hover:scale-110" />
+                <span className="font-label-md text-[14px] font-bold uppercase tracking-wider text-left">Food</span>
+              </button>
+              <button onClick={() => setActiveLogCategory('energy')} className="tactile-tile group rounded-lg p-6 h-40 bg-[#FFD180] text-[#E65100] flex flex-col justify-between transition-all duration-300">
+                <Zap className="w-8 h-8 self-start transition-transform group-hover:scale-110" />
+                <span className="font-label-md text-[14px] font-bold uppercase tracking-wider text-left">Energy</span>
+              </button>
+              <button onClick={() => setActiveLogCategory('shopping')} className="tactile-tile group rounded-lg p-6 h-40 bg-primary-container text-tertiary-fixed flex flex-col justify-between transition-all duration-300">
+                <ShoppingBag className="w-8 h-8 self-start transition-transform group-hover:scale-110" />
+                <span className="font-label-md text-[14px] font-bold uppercase tracking-wider text-left">Shopping</span>
+              </button>
+            </div>
+
+            {/* AI Coach Card */}
+            <div className="rounded-lg p-8 bg-gradient-to-br from-primary-container to-secondary shadow-xl relative overflow-hidden min-h-[200px] flex flex-col justify-center">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 blur-2xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-tertiary-fixed/10 rounded-full translate-y-12 -translate-x-12 blur-[30px] pointer-events-none" />
+              
+              <div className="flex items-center gap-3 mb-4 relative z-10">
+                <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <span className="font-label-md text-[14px] font-bold text-white/70 uppercase tracking-widest">AI Coach</span>
+              </div>
+              <p className="font-body-lg text-[18px] text-white leading-relaxed relative z-10">
+                Based on your 3 metro rides this week — your transport is <span className="font-bold text-tertiary-fixed">22% below average</span>. Keep going!
+              </p>
+            </div>
+
+            {/* Recommended Actions */}
+            <div className="glass-card rounded-lg p-8 flex flex-col gap-6">
+              <h3 className="font-label-md text-[14px] font-bold text-on-surface-variant uppercase tracking-widest">Recommended Actions</h3>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between p-4 bg-white/40 rounded-xl hover:bg-white/60 hover:shadow-sm transition-all cursor-pointer border border-transparent hover:border-white/50">
+                  <div className="flex items-center gap-3">
+                    <Leaf className="w-5 h-5 text-secondary" />
+                    <span className="font-label-md text-[14px] font-bold text-on-surface">Switch to LED bulbs</span>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-outline" />
+                </div>
+                <div className="flex items-center justify-between p-4 bg-white/40 rounded-xl hover:bg-white/60 hover:shadow-sm transition-all cursor-pointer border border-transparent hover:border-white/50">
+                  <div className="flex items-center gap-3">
+                    <Bike className="w-5 h-5 text-secondary" />
+                    <span className="font-label-md text-[14px] font-bold text-on-surface">Weekend bike trip</span>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-outline" />
+                </div>
+              </div>
+            </div>
+
+          </section>
+        </div>
       </main>
 
       {/* ─── Modals ─── */}
