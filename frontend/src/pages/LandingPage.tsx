@@ -6,6 +6,7 @@ import {
   Target, MessageCircle, Flame, ArrowDownRight, TreePine, Check,
   LogOut
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
 import { logoutUser } from '../features/users/api/auth';
@@ -67,6 +68,7 @@ const DailyRing = ({ value, max }: { value: number; max: number }) => {
 const LandingPage = () => {
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'login' | 'signup' }>({ isOpen: false, mode: 'login' });
   const [user, loading] = useAuthState(auth);
+  const navigate = useNavigate();
 
   const openAuth = (mode: 'login' | 'signup') => setAuthModal({ isOpen: true, mode });
   const closeAuth = () => setAuthModal((prev) => ({ ...prev, isOpen: false }));
@@ -82,7 +84,9 @@ const LandingPage = () => {
       <nav className="fixed top-0 w-full z-50 backdrop-blur-md border-b border-[#E8D5B0]/40" style={{ backgroundColor: 'rgba(245, 243, 239, 0.88)' }}>
         <div className="max-w-6xl mx-auto px-6 h-14 lg:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <img src="/logo.svg" alt="CarbonTrail" className="w-7 h-7 lg:w-8 lg:h-8" />
+            <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-[#1B4332] flex items-center justify-center">
+              <Leaf className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-white" />
+            </div>
             <span className="font-semibold text-base lg:text-lg tracking-tight" style={{ fontFamily: "var(--font-display)" }}>CarbonTrail</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-[#1C1C1E]/45">
@@ -101,7 +105,7 @@ const LandingPage = () => {
                 <button onClick={handleLogout} className="text-sm font-medium text-[#1C1C1E]/45 hover:text-[#E05252] transition-colors flex items-center gap-1.5">
                   <LogOut className="w-4 h-4" />
                 </button>
-                <button className="text-sm font-semibold bg-[#1B4332] text-white px-5 py-2.5 rounded-full hover:bg-[#1B4332]/90 transition-all active:scale-[0.97] shadow-sm ml-2">
+                <button onClick={() => navigate('/dashboard')} className="text-sm font-semibold bg-[#1B4332] text-white px-5 py-2.5 rounded-full hover:bg-[#1B4332]/90 transition-all active:scale-[0.97] shadow-sm ml-2">
                   Dashboard
                 </button>
               </>
@@ -154,7 +158,7 @@ const LandingPage = () => {
               className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3"
             >
               {user ? (
-                <button className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-[#1B4332] text-white px-7 py-3.5 lg:px-8 lg:py-4 rounded-full text-[14px] lg:text-[16px] font-semibold shadow-md hover:shadow-xl hover:shadow-[#1B4332]/10 transition-all duration-300 active:scale-[0.97]">
+                <button onClick={() => navigate('/dashboard')} className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-[#1B4332] text-white px-7 py-3.5 lg:px-8 lg:py-4 rounded-full text-[14px] lg:text-[16px] font-semibold shadow-md hover:shadow-xl hover:shadow-[#1B4332]/10 transition-all duration-300 active:scale-[0.97]">
                   Go to Dashboard
                   <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
                 </button>
@@ -472,7 +476,7 @@ const LandingPage = () => {
               No lectures. No guilt. Just your data, your actions, and a coach that actually gets you.
             </p>
             {user ? (
-              <button className="inline-flex items-center gap-2.5 bg-white text-[#1B4332] px-8 py-4 lg:px-10 lg:py-5 rounded-full text-[14px] lg:text-[16px] font-semibold hover:shadow-xl transition-all duration-300 active:scale-[0.97]">
+              <button onClick={() => navigate('/dashboard')} className="inline-flex items-center gap-2.5 bg-white text-[#1B4332] px-8 py-4 lg:px-10 lg:py-5 rounded-full text-[14px] lg:text-[16px] font-semibold hover:shadow-xl transition-all duration-300 active:scale-[0.97]">
                 Go to Dashboard
                 <ChevronRight className="w-4 h-4 lg:w-5 lg:h-5" />
               </button>
@@ -490,7 +494,9 @@ const LandingPage = () => {
       <footer className="py-8 lg:py-10 px-6 border-t border-[#E8D5B0]/30">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="CarbonTrail" className="w-5 h-5 lg:w-6 lg:h-6" />
+            <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-[#1B4332] flex items-center justify-center">
+              <Leaf className="w-2.5 h-2.5 lg:w-3 lg:h-3 text-white" />
+            </div>
             <span className="font-semibold text-[13px] lg:text-[14px]" style={{ fontFamily: "var(--font-display)" }}>CarbonTrail</span>
           </div>
           <p className="text-[11px] lg:text-[12px] text-[#1C1C1E]/30" style={{ fontFamily: "var(--font-body)" }}>

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { loginWithEmail, registerWithEmail, loginWithGoogle } from '../api/auth';
 
 const GoogleIcon = () => (
@@ -24,6 +25,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   // Sync mode when modal opens and clear form for best UX
   useEffect(() => {
@@ -100,6 +102,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
     } else {
       // Auth successful
       onClose();
+      navigate('/dashboard');
     }
   };
 
@@ -116,6 +119,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
     } else {
       // Auth successful
       onClose();
+      navigate('/dashboard');
     }
   };
 

@@ -18,13 +18,15 @@ The project is structured as a modern, decoupled monorepo:
 *   **Styling**: Tailwind CSS v4
 *   **Animations**: Framer Motion
 *   **Design System**: Custom typography (DM Sans & Inter) and a nature-inspired color palette (Forest, Sage, Mint, Clay, Sand, Fog).
+*   **Routing**: React Router DOM (Client-side routing)
 
-### Backend (In Progress)
+### Backend
 *   **Environment**: Node.js
 *   **Framework**: Express
 *   **Language**: TypeScript
-*   **AI Integration**: Google Vertex AI & Firebase Genkit
-*   **Authentication**: Firebase Auth
+*   **AI Integration**: Google Vertex AI & Firebase Genkit (In Progress)
+*   **Database**: Firebase Firestore
+*   **Authentication & Security**: Firebase Auth, Secure HttpOnly Session Cookies, Helmet, Express Rate Limit.
 
 ### Quality Assurance & Testing
 A comprehensive testing strategy ensures reliability across the entire stack:
@@ -44,14 +46,24 @@ A comprehensive testing strategy ensures reliability across the entire stack:
 *   Scaffolded the `users` feature domains across both frontend and backend.
 *   Built a robust, accessible, and animated Authentication Modal.
 *   Established the frontend testing environments (Vitest and Playwright) with 100% passing tests.
-*   **Successfully integrated Firebase Authentication (Client SDK on React, Admin SDK on Node.js/Express).**
-*   **Implemented secure JWT token verification middleware.**
-*   **Established backend testing infrastructure using Vitest and Supertest.**
+*   Successfully integrated Firebase Authentication (Client SDK on React, Admin SDK on Node.js/Express).
+*   Established backend testing infrastructure using Vitest and Supertest.
 
-### Phase 3: Dashboard & AI Engine (Next Steps)
-*   Develop the core dashboard and data logging interfaces for authenticated users.
-*   Integrate Vertex AI and Firebase Genkit for the personalized AI Coach.
-*   Implement data storage logic (Firestore/PostgreSQL) for user carbon logs.
+### Phase 3: Dashboard, Database & Security (Completed)
+*   **Dynamic Dashboard:** Built a highly polished, interactive dashboard using `framer-motion` for stagger animations and dynamic glassmorphism gradients.
+*   **Real-Time Data:** Integrated Firebase Firestore. Built a real-time listener that instantly calculates and animates the daily carbon progress ring without page refreshes.
+*   **Logging Modals:** Created category-specific, highly responsive modals for logging Transport, Food, Energy, and Shopping data.
+*   **Enterprise Security Hardening:**
+    *   Migrated from purely client-side auth to secure, 7-day `HttpOnly` **Backend Session Cookies**.
+    *   Eliminated Cross-Site Request Forgery (CSRF) via `SameSite: Strict` policies.
+    *   Protected the API against XSS, clickjacking, and MIME-sniffing using `helmet`.
+    *   Implemented `express-rate-limit` to block DoS and brute-force attacks.
+    *   Mitigated payload-crashing and parameter pollution using size limits and `hpp`.
+
+### Phase 4: AI Engine Integration (Next Steps)
+*   Initialize Firebase Genkit in the backend.
+*   Integrate Google Vertex AI to process user Firestore logs.
+*   Generate personalized, actionable Daily Nudges and display them in the Dashboard's AI Coach component.
 
 ## Running the Application Locally
 
@@ -60,16 +72,16 @@ A comprehensive testing strategy ensures reliability across the entire stack:
 *   npm
 
 ### Setup
-1.  Navigate to the frontend directory:
+1.  Navigate to the backend directory and start the server:
+    ```bash
+    cd backend
+    npm install
+    npm run dev
+    ```
+2.  In a separate terminal, navigate to the frontend directory:
     ```bash
     cd frontend
-    ```
-2.  Install dependencies:
-    ```bash
     npm install
-    ```
-3.  Start the development server:
-    ```bash
     npm run dev
     ```
 
