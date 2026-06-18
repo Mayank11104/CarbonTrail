@@ -83,9 +83,10 @@ const DashboardPage = () => {
       </header>
 
       {/* ─── Main Content Wrapper ─── */}
-      <main className="max-w-md mx-auto pt-8 px-6 space-y-8">
+      <main className="max-w-md lg:max-w-6xl mx-auto pt-8 px-6 lg:grid lg:grid-cols-12 lg:gap-10 space-y-8 lg:space-y-0">
         
-        {/* ─── Progress Ring Section ─── */}
+        {/* ─── Left Column: Progress Ring ─── */}
+        <div className="lg:col-span-5 lg:sticky lg:top-24 h-fit">
         <motion.section 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -146,8 +147,11 @@ const DashboardPage = () => {
             </div>
           </div>
         </motion.section>
+        </div>
 
-        {/* ─── Quick Logging Tiles ─── */}
+        {/* ─── Right Column: Logs & Insights ─── */}
+        <div className="lg:col-span-7 space-y-8 lg:pt-0 pt-2">
+          {/* ─── Quick Logging Tiles ─── */}
         <section>
           <div className="flex items-center justify-between mb-4 px-1">
             <h3 className="text-[18px] font-bold text-[#1C1C1E]" style={{ fontFamily: "var(--font-display)" }}>Quick Log</h3>
@@ -200,6 +204,8 @@ const DashboardPage = () => {
             </div>
           </div>
         </motion.section>
+        
+        </div>
 
       </main>
 
