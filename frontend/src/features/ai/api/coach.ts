@@ -49,3 +49,34 @@ export const fetchPersonalizedChallenge = async (idToken: string): Promise<AICha
 
   return res.json();
 };
+
+export interface AIScanResponse {
+  category: 'transport' | 'food' | 'energy' | 'shopping';
+  value: number;
+  unit: string;
+  carbonImpact: number;
+  details: string;
+}
+
+export const uploadAndScanBill = async (
+  idToken: string,
+  base64Image: string,
+  mimeType: string
+): Promise<AIScanResponse> => {
+  const res = await fetch(`${BACKEND_URL}/api/ai/scan`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${idToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ base64Image, mimeType }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error || `Scan request failed with status ${res.status}`);
+  }
+
+  return res.json();
+};
+

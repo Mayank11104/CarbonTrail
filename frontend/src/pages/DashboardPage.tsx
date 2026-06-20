@@ -2,13 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Leaf, LogOut, Flame, Train, Utensils,
-  Zap, ShoppingBag, Users, Trophy, ChevronRight, Sparkles, User, Bike, RefreshCw
+  Zap, ShoppingBag, Users, Trophy, ChevronRight, Sparkles, User, Bike, RefreshCw, Camera
 } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
 import { logoutUser } from '../features/users/api/auth';
 import LogModal, { type LogCategory } from '../features/logs/components/LogModal';
-import { subscribeToDailyLogs, subscribeToStreak, type CarbonLog } from '../features/logs/api/logs';
+import { ScanModal } from '../features/logs/components/ScanModal';
+import { TrendsModal } from '../features/logs/components/TrendsModal';
+import { subscribeToDailyLogs, subscribeToStreak, subscribeToWeeklyLogs, type CarbonLog } from '../features/logs/api/logs';
 import { fetchCoachInsight, fetchPersonalizedChallenge, type AICoachResponse, type AIChallengeResponse } from '../features/ai/api/coach';
 
 // ── Category config ────────────────────────────────────────────────────────
@@ -24,6 +26,9 @@ type CategoryKey = keyof typeof CATEGORY_META;
 const DashboardPage = () => {
   const [user] = useAuthState(auth);
   const [activeLogCategory, setActiveLogCategory] = useState<LogCategory>(null);
+  const [isScanOpen, setIsScanOpen] = useState(false);
+  const [isTrendsOpen, setIsTrendsOpen] = useState(false);
+  const [weeklyLogs, setWeeklyLogs] = useState<CarbonLog[]>([]);
 
   // ── Real data state ──────────────────────────────────────────────────────
   const [todayLogs, setTodayLogs] = useState<CarbonLog[]>([]);
@@ -47,7 +52,8 @@ const DashboardPage = () => {
     if (!user) return;
     const unsubLogs = subscribeToDailyLogs(user.uid, setTodayLogs);
     const unsubStreak = subscribeToStreak(user.uid, setStreak);
-    return () => { unsubLogs(); unsubStreak(); };
+    const unsubWeeklyLogs = subscribeToWeeklyLogs(user.uid, setWeeklyLogs);
+    return () => { unsubLogs(); unsubStreak(); unsubWeeklyLogs(); };
   }, [user]);
 
   // ── Computed values ──────────────────────────────────────────────────────
@@ -232,7 +238,7 @@ const DashboardPage = () => {
       </nav>
 
       {/* ─── Main Content ─── */}
-      <main className="max-w-[1280px] mx-auto pt-32 pb-20 px-[20px] md:px-[40px]">
+      <main className="max-w-[1280px] mx-auto pt-20 pb-20 px-[20px] md:px-[40px]">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-[24px]">
 
           {/* ─── Left Column ─── */}
@@ -255,14 +261,24 @@ const DashboardPage = () => {
                 <p className="text-on-surface-variant max-w-xs font-body-lg text-[18px]">
                   {getGreeting()}, {user?.displayName?.split(' ')[0] || 'Eco Warrior'}. You're making great progress on your daily footprint.
                 </p>
-                <div className="mt-8 flex justify-center md:justify-start gap-4">
+                <div className="mt-8 flex flex-wrap justify-center md:justify-start gap-4">
                   <button
                     onClick={() => setActiveLogCategory('all')}
                     className="bg-primary text-white font-label-md text-label-md px-8 py-4 rounded-full transition-all hover:shadow-lg hover:scale-105 active:scale-95"
                   >
                     Daily Check-in
                   </button>
-                  <button className="border border-primary text-primary font-label-md text-label-md px-8 py-4 rounded-full transition-all hover:bg-primary/5 active:scale-95">
+                  <button
+                    onClick={() => setIsScanOpen(true)}
+                    className="bg-white border border-primary text-primary font-label-md text-label-md px-8 py-4 rounded-full transition-all hover:bg-primary/5 active:scale-95 flex items-center gap-2"
+                  >
+                    <Camera className="w-4 h-4" />
+                    Scan Bill
+                  </button>
+                  <button 
+                    onClick={() => setIsTrendsOpen(true)}
+                    className="border border-outline-variant text-on-surface-variant font-label-md text-label-md px-8 py-4 rounded-full transition-all hover:bg-black/5 active:scale-95"
+                  >
                     View Trends
                   </button>
                 </div>
@@ -553,6 +569,15 @@ const DashboardPage = () => {
         category={activeLogCategory}
         isOpen={!!activeLogCategory}
         onClose={() => setActiveLogCategory(null)}
+      />
+      <ScanModal
+        isOpen={isScanOpen}
+        onClose={() => setIsScanOpen(false)}
+      />
+      <TrendsModal
+        isOpen={isTrendsOpen}
+        onClose={() => setIsTrendsOpen(false)}
+        weeklyLogs={weeklyLogs}
       />
 
     </div>

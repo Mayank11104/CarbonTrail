@@ -171,10 +171,6 @@ const LandingPage = () => {
                   <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
                 </button>
               )}
-              <button className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-white border border-outline-variant text-on-surface px-7 py-3.5 lg:px-8 lg:py-4 rounded-full font-label-md text-label-md hover:border-[#C07B52] hover:text-tertiary transition-all duration-300 active:scale-[0.97] shadow-sm">
-                <ScanLine className="w-4 h-4 lg:w-5 lg:h-5" />
-                Scan a bill
-              </button>
             </motion.div>
 
             {/* Social proof */}

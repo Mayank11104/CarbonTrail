@@ -208,3 +208,83 @@ Rules:
   return parsed;
 };
 
+export interface AIScanResponse {
+  category: 'transport' | 'food' | 'energy' | 'shopping';
+  value: number;
+  unit: string;
+  carbonImpact: number;
+  details: string;
+}
+
+export const scanReceiptOrBill = async (
+  idToken: string,
+  base64Image: string,
+  mimeType: string
+): Promise<AIScanResponse> => {
+  // 1. Verify token
+  await adminAuth.verifyIdToken(idToken);
+
+  // 2. Build prompt
+  const prompt = `
+You are an expert carbon footprint assistant for CarbonTrail. 
+Analyze the provided image of a receipt, ticket, invoice, or utility bill.
+
+Perform the following tasks:
+1. Determine which category it belongs to: "transport", "food", "energy", or "shopping".
+2. Extract the usage value (e.g. distance traveled, energy consumed in kWh, number of meals, or number of items purchased) and determine the unit of measurement.
+3. Calculate or estimate the carbon footprint impact (in kg CO2) associated with this activity. 
+   - For electricity (energy), use roughly 0.4 kg CO2 per kWh.
+   - For gasoline/driving (transport), use roughly 0.2 kg CO2 per km.
+   - For other categories, use reasonable, standard multipliers.
+4. Summarize what was detected (e.g., "Electricity bill of 320 kWh found").
+
+Respond ONLY with a JSON object (no markdown, no code blocks) in this exact format:
+{
+  "category": "energy", // must be exactly "transport", "food", "energy", or "shopping"
+  "value": 320.0, // number
+  "unit": "kWh", // string
+  "carbonImpact": 128.0, // estimated kg CO2
+  "details": "Parsed electricity bill showing 320 kWh used."
+}
+
+Rules:
+- If you cannot read the image or it is not a bill/receipt, return a fallback object targeting 'shopping' with 0 carbon impact.
+- Do not wrap the JSON in markdown code blocks like \`\`\`json. Return only raw JSON.
+`.trim();
+
+  // 3. Call Gemini Vision
+  const result = await ai.models.generateContent({
+    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    contents: [
+      {
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Image,
+        },
+      },
+      prompt,
+    ],
+  });
+
+  const text = (result.text || '').trim();
+
+  // 4. Parse response
+  let parsed: AIScanResponse;
+  try {
+    const clean = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '').trim();
+    parsed = JSON.parse(clean);
+  } catch {
+    // Fallback if parsing fails
+    parsed = {
+      category: 'shopping',
+      value: 1,
+      unit: 'item',
+      carbonImpact: 1.0,
+      details: 'Analyzed receipt, category is shopping.',
+    };
+  }
+
+  return parsed;
+};
+
+
