@@ -46,3 +46,4 @@ Thumbs.db
 *.local
 *.tsbuildinfo
 carbontrail-74b5b-firebase-adminsdk-fbsvc-*.json
+.env

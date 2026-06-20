@@ -1,31 +1,186 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Leaf, LogOut, Flame, Train, Utensils, 
-  Zap, ShoppingBag, Users, Trophy, ChevronRight, Sparkles, User, Bike
+import {
+  Leaf, LogOut, Flame, Train, Utensils,
+  Zap, ShoppingBag, Users, Trophy, ChevronRight, Sparkles, User, Bike, RefreshCw
 } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
 import { logoutUser } from '../features/users/api/auth';
 import LogModal, { type LogCategory } from '../features/logs/components/LogModal';
-import { subscribeToDailyLogs } from '../features/logs/api/logs';
+import { subscribeToDailyLogs, subscribeToStreak, type CarbonLog } from '../features/logs/api/logs';
+import { fetchCoachInsight, fetchPersonalizedChallenge, type AICoachResponse, type AIChallengeResponse } from '../features/ai/api/coach';
+
+// ── Category config ────────────────────────────────────────────────────────
+const CATEGORY_META = {
+  transport: { label: 'Transport', Icon: Train, color: '#40916C', blob: 'bg-[#94D4B1]/20' },
+  food: { label: 'Food', Icon: Utensils, color: '#C07B52', blob: 'bg-[#E8D5B0]/30' },
+  energy: { label: 'Energy', Icon: Zap, color: '#D97706', blob: 'bg-[#FFD180]/20' },
+  shopping: { label: 'Shopping', Icon: ShoppingBag, color: '#1B4332', blob: 'bg-[#95D5B2]/15' },
+} as const;
+
+type CategoryKey = keyof typeof CATEGORY_META;
 
 const DashboardPage = () => {
   const [user] = useAuthState(auth);
   const [activeLogCategory, setActiveLogCategory] = useState<LogCategory>(null);
-  const [totalCarbonToday, setTotalCarbonToday] = useState(0);
 
+  // ── Real data state ──────────────────────────────────────────────────────
+  const [todayLogs, setTodayLogs] = useState<CarbonLog[]>([]);
+  const [streak, setStreak] = useState(0);
+
+  // ── AI Coach state ───────────────────────────────────────────────────────
+  const [aiCoach, setAiCoach] = useState<AICoachResponse | null>(null);
+  const [isLoadingCoach, setIsLoadingCoach] = useState(false);
+  const [coachError, setCoachError] = useState<string | null>(null);
+
+  // ── AI Challenge state ───────────────────────────────────────────────────
+  const [aiChallenge, setAiChallenge] = useState<AIChallengeResponse | null>(null);
+  const [isLoadingChallenge, setIsLoadingChallenge] = useState(false);
+  const [challengeError, setChallengeError] = useState<string | null>(null);
+  const [isChallengeActive, setIsChallengeActive] = useState(false);
+  const [checkedTasks, setCheckedTasks] = useState<boolean[]>([false, false, false]);
+  const [isChallengeCompleted, setIsChallengeCompleted] = useState(false);
+
+  // ── Subscriptions ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
-    const unsubscribe = subscribeToDailyLogs(user.uid, (total) => {
-      setTotalCarbonToday(total);
-    });
-    return () => unsubscribe();
+    const unsubLogs = subscribeToDailyLogs(user.uid, setTodayLogs);
+    const unsubStreak = subscribeToStreak(user.uid, setStreak);
+    return () => { unsubLogs(); unsubStreak(); };
   }, [user]);
 
-  const handleLogout = async () => {
-    await logoutUser();
+  // ── Computed values ──────────────────────────────────────────────────────
+  const totalCarbonToday = todayLogs.reduce((sum, l) => sum + l.carbonImpact, 0);
+
+  const categoryTotals = (Object.keys(CATEGORY_META) as CategoryKey[]).reduce(
+    (acc, cat) => {
+      acc[cat] = todayLogs
+        .filter((l) => l.category === cat)
+        .reduce((s, l) => s + l.carbonImpact, 0);
+      return acc;
+    },
+    {} as Record<CategoryKey, number>
+  );
+
+  const getPercentage = (cat: CategoryKey) =>
+    totalCarbonToday > 0
+      ? Math.round((categoryTotals[cat] / totalCarbonToday) * 100)
+      : 0;
+
+  // ── Ring logic ───────────────────────────────────────────────────────────
+  const dailyBudget = 15;
+  const progressPercent = Math.min(totalCarbonToday / dailyBudget, 1);
+  const radius = 110;
+  const circleCircumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circleCircumference * (1 - progressPercent);
+
+  // ── AI Coach fetch ───────────────────────────────────────────────────────
+  const loadCoachInsight = useCallback(async () => {
+    if (!user) return;
+    setIsLoadingCoach(true);
+    setCoachError(null);
+    try {
+      const token = await user.getIdToken();
+      const result = await fetchCoachInsight(token);
+      setAiCoach(result);
+    } catch {
+      setCoachError('Could not load insight. Try again.');
+    } finally {
+      setIsLoadingCoach(false);
+    }
+  }, [user]);
+
+  // ── AI Challenge fetch & persistence ─────────────────────────────────────
+  const loadChallenge = useCallback(async (forceFetch = false) => {
+    if (!user) return;
+    const storageKey = `carbontrail_challenge_${user.uid}`;
+    
+    if (!forceFetch) {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setAiChallenge(parsed.challenge);
+          setIsChallengeActive(parsed.active);
+          setCheckedTasks(parsed.checked || [false, false, false]);
+          setIsChallengeCompleted(parsed.completed || false);
+          return;
+        } catch (e) {
+          console.error('Error parsing stored challenge:', e);
+        }
+      }
+    }
+
+    setIsLoadingChallenge(true);
+    setChallengeError(null);
+    try {
+      const token = await user.getIdToken();
+      const result = await fetchPersonalizedChallenge(token);
+      setAiChallenge(result);
+      setIsChallengeActive(false);
+      setCheckedTasks([false, false, false]);
+      setIsChallengeCompleted(false);
+      
+      // Save initial state to storage
+      localStorage.setItem(storageKey, JSON.stringify({
+        challenge: result,
+        active: false,
+        checked: [false, false, false],
+        completed: false
+      }));
+    } catch {
+      setChallengeError('Could not load challenge. Try again.');
+    } finally {
+      setIsLoadingChallenge(false);
+    }
+  }, [user]);
+
+  const handleAcceptChallenge = () => {
+    if (!user || !aiChallenge) return;
+    const storageKey = `carbontrail_challenge_${user.uid}`;
+    setIsChallengeActive(true);
+    const updated = {
+      challenge: aiChallenge,
+      active: true,
+      checked: [false, false, false],
+      completed: false
+    };
+    localStorage.setItem(storageKey, JSON.stringify(updated));
   };
+
+  const handleToggleTask = (index: number) => {
+    if (!user || !aiChallenge) return;
+    const storageKey = `carbontrail_challenge_${user.uid}`;
+    const newChecked = [...checkedTasks];
+    newChecked[index] = !newChecked[index];
+    setCheckedTasks(newChecked);
+
+    const allCompleted = newChecked.every(v => v === true);
+    setIsChallengeCompleted(allCompleted);
+
+    const updated = {
+      challenge: aiChallenge,
+      active: true,
+      checked: newChecked,
+      completed: allCompleted
+    };
+    localStorage.setItem(storageKey, JSON.stringify(updated));
+  };
+
+  const handleAbandonOrNewChallenge = () => {
+    loadChallenge(true);
+  };
+
+  // Auto-fetch on first load
+  useEffect(() => {
+    if (user) {
+      loadCoachInsight();
+      loadChallenge();
+    }
+  }, [user, loadCoachInsight, loadChallenge]);
+
+  const handleLogout = async () => { await logoutUser(); };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -34,16 +189,9 @@ const DashboardPage = () => {
     return 'Good evening';
   };
 
-  // Ring logic
-  const dailyBudget = 15;
-  const progressPercent = Math.min(totalCarbonToday / dailyBudget, 1);
-  const radius = 110;
-  const circleCircumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circleCircumference * (1 - progressPercent);
-
   return (
     <div className="font-body-md text-on-surface">
-      
+
       {/* ─── Ambient Background Orbs ─── */}
       <div className="mesh-gradient">
         <div className="orb w-[600px] h-[600px] bg-[#95D5B2] -top-20 -left-20" />
@@ -60,14 +208,11 @@ const DashboardPage = () => {
             </div>
             <span className="font-semibold text-base lg:text-lg tracking-tight font-display-lg text-primary">CarbonTrail</span>
           </div>
-          {/* ─── Center Links ─── */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-on-surface/45">
-            <a href="#" className="hover:text-primary transition-colors duration-200">Dashboard</a>
-            <a href="#" className="hover:text-primary transition-colors duration-200">Impact</a>
-            <a href="#" className="hover:text-primary transition-colors duration-200">Community</a>
+            <button className="hover:text-primary transition-colors duration-200">Dashboard</button>
+            <button className="hover:text-primary transition-colors duration-200">Impact</button>
+            <button className="hover:text-primary transition-colors duration-200">Community</button>
           </div>
-
-          {/* ─── Right Side (User Actions) ─── */}
           <div className="flex items-center gap-3">
             <span className="hidden sm:block text-sm font-medium text-on-surface/60 mr-2">
               Hi, {user?.displayName || 'Eco Warrior'}
@@ -89,26 +234,29 @@ const DashboardPage = () => {
       {/* ─── Main Content ─── */}
       <main className="max-w-[1280px] mx-auto pt-32 pb-20 px-[20px] md:px-[40px]">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-[24px]">
-          
+
           {/* ─── Left Column ─── */}
           <section className="lg:col-span-8 flex flex-col gap-[24px]">
-            
+
             {/* Hero Progress Card */}
             <div className="glass-card rounded-xl p-10 relative overflow-hidden flex flex-col md:flex-row items-center justify-between min-h-[400px]">
+              {/* Streak badge — real data */}
               <div className="absolute top-8 right-8 bg-secondary-container/30 px-4 py-2 rounded-full flex items-center gap-2 backdrop-blur-md">
                 <Flame className="w-5 h-5 text-[#E65100]" />
-                <span className="font-label-md text-label-md text-on-secondary-container">7-day streak</span>
+                <span className="font-label-md text-label-md text-on-secondary-container">
+                  {streak}-day streak
+                </span>
               </div>
-              
+
               <div className="flex flex-col gap-4 text-center md:text-left z-10">
-                <h1 className="font-headline-lg text-[40px] text-primary mb-2" style={{ fontFamily: "var(--font-headline-lg)" }}>
+                <h1 className="font-headline-lg text-[40px] text-primary mb-2" style={{ fontFamily: 'var(--font-headline-lg)' }}>
                   {progressPercent > 0.9 ? 'Careful today ⚠️' : 'Looking good 🌿'}
                 </h1>
                 <p className="text-on-surface-variant max-w-xs font-body-lg text-[18px]">
                   {getGreeting()}, {user?.displayName?.split(' ')[0] || 'Eco Warrior'}. You're making great progress on your daily footprint.
                 </p>
                 <div className="mt-8 flex justify-center md:justify-start gap-4">
-                  <button 
+                  <button
                     onClick={() => setActiveLogCategory('all')}
                     className="bg-primary text-white font-label-md text-label-md px-8 py-4 rounded-full transition-all hover:shadow-lg hover:scale-105 active:scale-95"
                   >
@@ -119,22 +267,23 @@ const DashboardPage = () => {
                   </button>
                 </div>
               </div>
-              
+
+              {/* Ring — real data */}
               <div className="relative w-64 h-64 flex items-center justify-center mt-12 md:mt-0 z-10">
                 <svg viewBox="0 0 256 256" className="w-full h-full -rotate-90">
                   <circle cx="128" cy="128" r={radius} fill="transparent" stroke="var(--color-surface-container-high)" strokeWidth="12" />
-                  <motion.circle 
-                    cx="128" cy="128" r={radius} fill="transparent" 
+                  <motion.circle
+                    cx="128" cy="128" r={radius} fill="transparent"
                     stroke="var(--color-primary)" strokeWidth="12" strokeLinecap="round"
                     strokeDasharray={circleCircumference}
                     initial={{ strokeDashoffset: circleCircumference }}
                     animate={{ strokeDashoffset }}
-                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                    transition={{ duration: 1.5, ease: 'easeInOut' }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="font-display-lg text-[64px] leading-none text-primary tracking-tighter" style={{ fontFamily: "var(--font-display-lg)" }}>
-                    {Number(totalCarbonToday || 0).toFixed(1)}
+                  <span className="font-display-lg text-[64px] leading-none text-primary tracking-tighter" style={{ fontFamily: 'var(--font-display-lg)' }}>
+                    {totalCarbonToday.toFixed(1)}
                   </span>
                   <span className="font-label-md text-[14px] text-on-surface-variant mt-1 uppercase tracking-wider font-bold">
                     of {dailyBudget} kg
@@ -174,106 +323,224 @@ const DashboardPage = () => {
               </div>
 
               {/* Challenge Card */}
-              <div className="glass-card rounded-lg p-8 bg-primary text-[#1C1C1E] flex flex-col justify-between hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300">
-                <div>
-                  <h3 className="font-headline-lg text-[28px] font-bold mb-2">Join a Challenge</h3>
-                  <p className="opacity-80 text-[16px]">Compete with friends to reduce your footprint. Top 10 users earn the Earth Badge.</p>
-                </div>
-                <button className="bg-[#1C1C1E] text-white font-label-md text-[14px] font-bold w-full py-4 rounded-full mt-8 hover:bg-opacity-90 transition-all active:scale-95 shadow-lg">
-                  Browse Challenges
-                </button>
+              <div className="glass-card rounded-lg p-8 flex flex-col justify-between hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 relative overflow-hidden min-h-[340px]">
+                {isLoadingChallenge ? (
+                  <div className="space-y-4 animate-pulse flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="h-6 bg-primary/10 rounded w-2/3 mb-4" />
+                      <div className="h-4 bg-primary/10 rounded w-full mb-2" />
+                      <div className="h-4 bg-primary/10 rounded w-4/5" />
+                    </div>
+                    <div className="h-12 bg-primary/10 rounded-full w-full mt-4" />
+                  </div>
+                ) : challengeError ? (
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-headline-lg text-[22px] text-primary font-bold mb-2">Challenge Error</h3>
+                      <p className="text-on-surface-variant text-[14px]">{challengeError}</p>
+                    </div>
+                    <button
+                      onClick={() => loadChallenge(true)}
+                      className="bg-primary text-white font-label-md text-[14px] font-bold w-full py-4 rounded-full mt-6 transition-all hover:bg-primary/95 active:scale-95"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                ) : isChallengeCompleted ? (
+                  <div className="flex-1 flex flex-col justify-between items-center text-center py-2">
+                    <div className="flex flex-col items-center">
+                      <div className="w-14 h-14 rounded-full bg-secondary-container/20 flex items-center justify-center mb-4 border border-secondary/20 shadow-sm animate-bounce">
+                        <Trophy className="w-7 h-7 text-[#D97706]" />
+                      </div>
+                      <h3 className="font-headline-lg text-[22px] text-primary font-bold mb-2">Challenge Complete!</h3>
+                      <p className="text-on-surface-variant text-[13px] leading-relaxed max-w-[240px] mx-auto">
+                        Fantastic job! You completed the <strong className="font-bold text-primary">{aiChallenge?.title}</strong> and saved an estimated <strong className="font-bold text-primary">{aiChallenge?.targetSaving} kg CO2</strong>!
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleAbandonOrNewChallenge}
+                      className="bg-primary text-white font-label-md text-[14px] font-bold w-full py-4 rounded-full mt-6 transition-all hover:shadow-lg active:scale-95"
+                    >
+                      Get Next Challenge
+                    </button>
+                  </div>
+                ) : isChallengeActive && aiChallenge ? (
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-label-md text-[11px] font-bold text-secondary uppercase tracking-widest">Active Challenge</span>
+                        <span className="font-label-md text-[11px] font-bold text-[#D97706] uppercase tracking-widest">Save: ~{aiChallenge.targetSaving}kg</span>
+                      </div>
+                      <h3 className="font-headline-lg text-[22px] text-primary font-bold mb-4">{aiChallenge.title}</h3>
+                      
+                      {/* Tasks Checklist */}
+                      <div className="space-y-3.5">
+                        {aiChallenge.tasks.map((task, i) => (
+                          <label
+                            key={i}
+                            className="flex items-start gap-3 p-3 bg-white/40 border border-outline-variant/20 rounded-xl hover:bg-white/60 transition-colors cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checkedTasks[i]}
+                              onChange={() => handleToggleTask(i)}
+                              className="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary border-outline-variant cursor-pointer"
+                            />
+                            <span className={`text-[13px] font-medium leading-tight ${checkedTasks[i] ? 'line-through text-on-surface/40' : 'text-on-surface'}`}>
+                              {task}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={handleAbandonOrNewChallenge}
+                      className="text-on-surface-variant/50 hover:text-error text-[11px] font-bold mt-6 transition-colors self-center active:scale-95"
+                    >
+                      Give Up & Get New Challenge
+                    </button>
+                  </div>
+                ) : aiChallenge ? (
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-label-md text-[11px] font-bold text-primary/60 uppercase tracking-widest">AI Weekly Challenge</span>
+                        <span className="font-label-md text-[11px] font-bold text-[#D97706] uppercase tracking-widest">Save: ~{aiChallenge.targetSaving}kg</span>
+                      </div>
+                      <h3 className="font-headline-lg text-[22px] text-primary font-bold mb-3">{aiChallenge.title}</h3>
+                      <p className="text-on-surface-variant text-[14px] leading-relaxed mb-4">{aiChallenge.description}</p>
+                    </div>
+                    <div className="flex flex-col gap-2 mt-4">
+                      <button
+                        onClick={handleAcceptChallenge}
+                        className="bg-primary text-white font-label-md text-[14px] font-bold w-full py-4 rounded-full transition-all hover:shadow-lg active:scale-95 text-center cursor-pointer"
+                      >
+                        Accept Challenge
+                      </button>
+                      <button
+                        onClick={handleAbandonOrNewChallenge}
+                        className="border border-primary/20 text-primary font-label-md text-[12px] font-bold w-full py-2.5 rounded-full transition-all hover:bg-primary/5 active:scale-95 text-center cursor-pointer"
+                      >
+                        Suggest Another
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-headline-lg text-[22px] text-primary font-bold mb-2">Weekly Challenge</h3>
+                      <p className="text-on-surface-variant text-[14px] leading-relaxed">
+                        Track logs to generate a personalized challenge targeting your highest footprint category.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => loadChallenge(true)}
+                      className="bg-primary text-white font-label-md text-[14px] font-bold w-full py-4 rounded-full mt-6 transition-all hover:bg-opacity-90 active:scale-95"
+                    >
+                      Generate AI Challenge
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </section>
 
           {/* ─── Right Column ─── */}
           <section className="lg:col-span-4 flex flex-col gap-[24px]">
-            
-            {/* Segregated Data Tiles */}
+
+            {/* Category Data Tiles — real data */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-lg p-6 h-40 bg-surface text-primary flex flex-col justify-between border border-outline-variant/30 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-[#94D4B1]/20 rounded-bl-full -translate-y-4 translate-x-4 pointer-events-none" />
-                <Train className="w-7 h-7 text-[#40916C]" />
-                <div>
-                  <div className="flex items-end justify-between mb-1">
-                    <span className="font-display-lg text-[24px] font-bold leading-none">4.2</span>
-                    <span className="font-label-md font-bold text-[#40916C]">40%</span>
+              {(Object.entries(CATEGORY_META) as [CategoryKey, typeof CATEGORY_META[CategoryKey]][]).map(([cat, meta]) => {
+                const { Icon, color, blob, label } = meta;
+                const kg = categoryTotals[cat];
+                const pct = getPercentage(cat);
+                return (
+                  <div
+                    key={cat}
+                    className="rounded-lg p-6 h-40 bg-surface flex flex-col justify-between border border-outline-variant/30 shadow-sm relative overflow-hidden"
+                  >
+                    <div className={`absolute top-0 right-0 w-24 h-24 ${blob} rounded-bl-full -translate-y-4 translate-x-4 pointer-events-none`} />
+                    <Icon className="w-7 h-7" style={{ color }} />
+                    <div>
+                      <div className="flex items-end justify-between mb-1">
+                        <span className="font-display-lg text-[24px] font-bold leading-none text-[#1C1C1E]">
+                          {kg.toFixed(1)}
+                        </span>
+                        <span className="font-label-md font-bold" style={{ color }}>
+                          {pct}%
+                        </span>
+                      </div>
+                      <span className="font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider">
+                        {label} (kg)
+                      </span>
+                    </div>
                   </div>
-                  <span className="font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider">Transport (kg)</span>
-                </div>
-              </div>
-
-              <div className="rounded-lg p-6 h-40 bg-surface text-[#5D4037] flex flex-col justify-between border border-outline-variant/30 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-[#E8D5B0]/30 rounded-bl-full -translate-y-4 translate-x-4 pointer-events-none" />
-                <Utensils className="w-7 h-7 text-[#C07B52]" />
-                <div>
-                  <div className="flex items-end justify-between mb-1">
-                    <span className="font-display-lg text-[24px] font-bold leading-none">3.1</span>
-                    <span className="font-label-md font-bold text-[#C07B52]">30%</span>
-                  </div>
-                  <span className="font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider">Food (kg)</span>
-                </div>
-              </div>
-
-              <div className="rounded-lg p-6 h-40 bg-surface text-[#E65100] flex flex-col justify-between border border-outline-variant/30 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-[#FFD180]/20 rounded-bl-full -translate-y-4 translate-x-4 pointer-events-none" />
-                <Zap className="w-7 h-7 text-[#D97706]" />
-                <div>
-                  <div className="flex items-end justify-between mb-1">
-                    <span className="font-display-lg text-[24px] font-bold leading-none">2.1</span>
-                    <span className="font-label-md font-bold text-[#D97706]">20%</span>
-                  </div>
-                  <span className="font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider">Energy (kg)</span>
-                </div>
-              </div>
-
-              <div className="rounded-lg p-6 h-40 bg-surface text-tertiary flex flex-col justify-between border border-outline-variant/30 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary-container/10 rounded-bl-full -translate-y-4 translate-x-4 pointer-events-none" />
-                <ShoppingBag className="w-7 h-7 text-[#1B4332]" />
-                <div>
-                  <div className="flex items-end justify-between mb-1">
-                    <span className="font-display-lg text-[24px] font-bold leading-none">1.0</span>
-                    <span className="font-label-md font-bold text-[#1B4332]">10%</span>
-                  </div>
-                  <span className="font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider">Shopping (kg)</span>
-                </div>
-              </div>
+                );
+              })}
             </div>
 
-            {/* AI Coach Card */}
-            <div className="rounded-lg p-8 bg-gradient-to-br from-primary-container to-secondary shadow-xl relative overflow-hidden min-h-[200px] flex flex-col justify-center">
+            {/* AI Coach Card — real AI data */}
+            <div className="rounded-lg p-8 bg-gradient-to-br from-primary-container to-secondary shadow-xl relative overflow-hidden min-h-[200px] flex flex-col justify-between">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 blur-2xl pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-40 h-40 bg-tertiary-fixed/10 rounded-full translate-y-12 -translate-x-12 blur-[30px] pointer-events-none" />
-              
-              <div className="flex items-center gap-3 mb-4 relative z-10">
-                <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
+
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="font-label-md text-[14px] font-bold text-white/70 uppercase tracking-widest">AI Coach</span>
                 </div>
-                <span className="font-label-md text-[14px] font-bold text-white/70 uppercase tracking-widest">AI Coach</span>
+                <button
+                  onClick={loadCoachInsight}
+                  disabled={isLoadingCoach}
+                  className="w-7 h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white/60 hover:bg-white/20 transition-all"
+                  title="Refresh insight"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingCoach ? 'animate-spin' : ''}`} />
+                </button>
               </div>
-              <p className="font-body-lg text-[18px] text-white leading-relaxed relative z-10">
-                Based on your 3 metro rides this week — your transport is <span className="font-bold text-tertiary-fixed">22% below average</span>. Keep going!
-              </p>
+
+              {isLoadingCoach ? (
+                <div className="relative z-10 space-y-2 animate-pulse">
+                  <div className="h-4 bg-white/20 rounded w-full" />
+                  <div className="h-4 bg-white/20 rounded w-4/5" />
+                  <div className="h-4 bg-white/20 rounded w-3/5" />
+                </div>
+              ) : coachError ? (
+                <p className="font-body-lg text-[14px] text-white/60 relative z-10">{coachError}</p>
+              ) : aiCoach ? (
+                <div className="relative z-10">
+                  <p className="font-body-lg text-[16px] text-white leading-relaxed mb-2">{aiCoach.insight}</p>
+                  <p className="text-[13px] text-white/70 font-medium">💡 {aiCoach.tip}</p>
+                </div>
+              ) : (
+                <p className="font-body-lg text-[16px] text-white/60 relative z-10">Loading your personalized insight...</p>
+              )}
             </div>
 
-            {/* Recommended Actions */}
+            {/* Recommended Actions — real AI data */}
             <div className="glass-card rounded-lg p-8 flex flex-col gap-6">
-              <h3 className="font-label-md text-[14px] font-bold text-on-surface-variant uppercase tracking-widest">Recommended Actions</h3>
+              <h3 className="font-label-md text-[14px] font-bold text-on-surface-variant uppercase tracking-widest">
+                Recommended Actions
+              </h3>
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between p-4 bg-white/40 rounded-xl hover:bg-white/60 hover:shadow-sm transition-all cursor-pointer border border-transparent hover:border-white/50">
-                  <div className="flex items-center gap-3">
-                    <Leaf className="w-5 h-5 text-secondary" />
-                    <span className="font-label-md text-[14px] font-bold text-on-surface">Switch to LED bulbs</span>
+                {(aiCoach?.actions ?? ['Switch to LED bulbs', 'Try a weekend bike trip']).map((action, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-4 bg-white/40 rounded-xl hover:bg-white/60 hover:shadow-sm transition-all cursor-pointer border border-transparent hover:border-white/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      {i % 2 === 0
+                        ? <Leaf className="w-5 h-5 text-secondary shrink-0" />
+                        : <Bike className="w-5 h-5 text-secondary shrink-0" />
+                      }
+                      <span className="font-label-md text-[14px] font-bold text-on-surface">{action}</span>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-outline shrink-0" />
                   </div>
-                  <ChevronRight className="w-5 h-5 text-outline" />
-                </div>
-                <div className="flex items-center justify-between p-4 bg-white/40 rounded-xl hover:bg-white/60 hover:shadow-sm transition-all cursor-pointer border border-transparent hover:border-white/50">
-                  <div className="flex items-center gap-3">
-                    <Bike className="w-5 h-5 text-secondary" />
-                    <span className="font-label-md text-[14px] font-bold text-on-surface">Weekend bike trip</span>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-outline" />
-                </div>
+                ))}
               </div>
             </div>
 
@@ -282,10 +549,10 @@ const DashboardPage = () => {
       </main>
 
       {/* ─── Modals ─── */}
-      <LogModal 
-        category={activeLogCategory} 
-        isOpen={!!activeLogCategory} 
-        onClose={() => setActiveLogCategory(null)} 
+      <LogModal
+        category={activeLogCategory}
+        isOpen={!!activeLogCategory}
+        onClose={() => setActiveLogCategory(null)}
       />
 
     </div>

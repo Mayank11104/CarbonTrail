@@ -1,14 +1,15 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import hpp from 'hpp';
 import userRoutes from './features/users/users.routes';
 import authRoutes from './features/auth/auth.routes';
-
-dotenv.config();
+import aiRoutes from './features/ai/ai.routes';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -33,6 +34,7 @@ app.use(hpp()); // HTTP Parameter Pollution prevention
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Basic health check
 app.get('/health', (req, res) => {
