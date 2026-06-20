@@ -238,7 +238,7 @@ const DashboardPage = () => {
       </nav>
 
       {/* ─── Main Content ─── */}
-      <main className="max-w-[1280px] mx-auto pt-20 pb-20 px-[20px] md:px-[40px]">
+      <main className="max-w-[1280px] mx-auto pt-[72px] pb-20 px-[20px] md:px-[40px]">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-[24px]">
 
           {/* ─── Left Column ─── */}
@@ -370,7 +370,7 @@ const DashboardPage = () => {
                       </div>
                       <h3 className="font-headline-lg text-[22px] text-primary font-bold mb-2">Challenge Complete!</h3>
                       <p className="text-on-surface-variant text-[13px] leading-relaxed max-w-[240px] mx-auto">
-                        Fantastic job! You completed the <strong className="font-bold text-primary">{aiChallenge?.title}</strong> and saved an estimated <strong className="font-bold text-primary">{aiChallenge?.targetSaving} kg CO2</strong>!
+                        Fantastic job! You completed the <strong className="font-bold text-primary">{aiChallenge?.title.replace(/\*\*/g, '')}</strong> and saved an estimated <strong className="font-bold text-primary">{aiChallenge?.targetSaving} kg CO2</strong>!
                       </p>
                     </div>
                     <button
@@ -387,7 +387,7 @@ const DashboardPage = () => {
                         <span className="font-label-md text-[11px] font-bold text-secondary uppercase tracking-widest">Active Challenge</span>
                         <span className="font-label-md text-[11px] font-bold text-[#D97706] uppercase tracking-widest">Save: ~{aiChallenge.targetSaving}kg</span>
                       </div>
-                      <h3 className="font-headline-lg text-[22px] text-primary font-bold mb-4">{aiChallenge.title}</h3>
+                      <h3 className="font-headline-lg text-[22px] text-primary font-bold mb-4">{aiChallenge.title.replace(/\*\*/g, '')}</h3>
                       
                       {/* Tasks Checklist */}
                       <div className="space-y-3.5">
@@ -424,7 +424,7 @@ const DashboardPage = () => {
                         <span className="font-label-md text-[11px] font-bold text-primary/60 uppercase tracking-widest">AI Weekly Challenge</span>
                         <span className="font-label-md text-[11px] font-bold text-[#D97706] uppercase tracking-widest">Save: ~{aiChallenge.targetSaving}kg</span>
                       </div>
-                      <h3 className="font-headline-lg text-[22px] text-primary font-bold mb-3">{aiChallenge.title}</h3>
+                      <h3 className="font-headline-lg text-[22px] text-primary font-bold mb-3">{aiChallenge.title.replace(/\*\*/g, '')}</h3>
                       <p className="text-on-surface-variant text-[14px] leading-relaxed mb-4">{aiChallenge.description}</p>
                     </div>
                     <div className="flex flex-col gap-2 mt-4">
