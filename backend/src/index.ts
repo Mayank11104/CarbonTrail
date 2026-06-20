@@ -41,6 +41,15 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'CarbonTrail API is running' });
 });
 
+// Serve frontend static files in production
+import path from 'path';
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../public')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+  });
+}
+
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

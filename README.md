@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="frontend/public/favicon.ico" alt="Logo" width="80" height="80">
+  <img src="frontend/public/icon.svg" alt="Logo" width="80" height="80">
   <h1 align="center">CarbonTrail</h1>
 
   <p align="center">
