@@ -32,6 +32,9 @@ RUN npm install --omit=dev
 # Copy backend compiled code
 COPY --from=backend-builder /app/backend/dist ./dist
 
+# Copy Firebase Admin credentials
+COPY backend/carbontrail-74b5b-firebase-adminsdk-fbsvc-9d949c0b73.json ./
+
 # Copy frontend build output to be served by the backend
 COPY --from=frontend-builder /app/frontend/dist ./public
 
