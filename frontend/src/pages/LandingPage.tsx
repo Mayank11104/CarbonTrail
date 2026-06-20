@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Leaf, TrendingDown, ArrowRight, ScanLine, Sparkles,
+  Leaf, TrendingDown, ArrowRight, Sparkles,
   Train, Utensils, Zap, ShoppingBag, ChevronRight,
   Target, MessageCircle, Flame, ArrowDownRight, TreePine, Check,
   LogOut

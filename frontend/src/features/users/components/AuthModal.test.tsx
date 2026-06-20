@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import AuthModal from './AuthModal'
 
 // Mock framer-motion to avoid animation issues in tests
