@@ -52,3 +52,4 @@ docker-compose.override.yml
 *.tsbuildinfo
 *.env
 backend/.env
+CLAUDE.md

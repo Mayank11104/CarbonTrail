@@ -139,7 +139,6 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
         const result = await uploadAndScanBill(idToken, rawBase64, mimeType);
         setScanResult(result);
       } catch (err: any) {
-        console.error('Scan failed:', err);
         setError(err.message || 'Failed to scan the bill. Please try again.');
       } finally {
         setIsScanning(false);
@@ -165,7 +164,6 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
         resetScanState();
       }, 1500);
     } catch (err: any) {
-      console.error('Failed to save log:', err);
       setError('Failed to save log to database.');
     } finally {
       setIsSaving(false);

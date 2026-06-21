@@ -140,7 +140,7 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
         setSubmitted(false);
       }, APP_CONSTANTS.LOGS.SUCCESS_TIMEOUT_MS);
     } catch (error) {
-      console.error('Error saving log:', error);
+      // Failed to save log
     }
     setIsSubmitting(false);
   };

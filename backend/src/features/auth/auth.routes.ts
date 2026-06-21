@@ -36,7 +36,7 @@ router.post('/session', async (req, res) => {
       res.status(401).send('Recent sign in required!');
     }
   } catch (error) {
-    console.error('Error creating session cookie:', error);
+    // Session cookie error
     res.status(401).send('UNAUTHORIZED REQUEST!');
   }
 });

@@ -27,6 +27,16 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Form state
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [authError, setAuthError] = useState<string | null>(null);
+
   // Sync mode when modal opens and clear form for best UX
   useEffect(() => {
     if (isOpen) {
@@ -37,16 +47,6 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
       setFormData({ name: '', email: '', password: '' });
     }
   }, [isOpen, initialMode]);
-
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [authError, setAuthError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -123,12 +123,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
     }
   };
 
-  const switchMode = useCallback(() => {
+  const switchMode = () => {
     setMode((prev) => (prev === 'login' ? 'signup' : 'login'));
     setErrors({});
     setAuthError(null);
     setShowPassword(false);
-  }, []);
+  };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();

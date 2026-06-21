@@ -14,12 +14,8 @@ import aiRoutes from './features/ai/ai.routes';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Security Headers (Helmet) - configured to allow HTTP access via IP address
-app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginOpenerPolicy: false,
-  hsts: false
-}));
+// Security Headers (Helmet) - strict defaults for production HTTPS
+app.use(helmet());
 
 // Rate Limiting (DoS prevention)
 const limiter = rateLimit({
@@ -53,6 +49,12 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, '../public/index.html'));
   });
 }
+
+// Global Error Handler to prevent stack trace leaks
+import type { Request, Response, NextFunction } from 'express';
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  res.status(500).json({ error: 'Internal Server Error' });
+});
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port as number, '0.0.0.0', () => {

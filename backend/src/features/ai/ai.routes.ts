@@ -22,7 +22,6 @@ router.post('/coach', async (req: Request, res: Response) => {
     const insight = await getCoachInsight(idToken);
     res.json(insight);
   } catch (err: any) {
-    console.error('[AI Coach Error]', err?.message || err);
     if (err?.code === 'auth/argument-error' || err?.code === 'auth/id-token-expired') {
       res.status(401).json({ error: 'Invalid or expired token' });
     } else {
@@ -50,7 +49,6 @@ router.post('/challenge', async (req: Request, res: Response) => {
     const challenge = await getPersonalizedChallenge(idToken);
     res.json(challenge);
   } catch (err: any) {
-    console.error('[AI Challenge Error]', err?.message || err);
     if (err?.code === 'auth/argument-error' || err?.code === 'auth/id-token-expired') {
       res.status(401).json({ error: 'Invalid or expired token' });
     } else {
@@ -85,7 +83,6 @@ router.post('/scan', async (req: Request, res: Response) => {
     const scanResult = await scanReceiptOrBill(idToken, base64Image, mimeType);
     res.json(scanResult);
   } catch (err: any) {
-    console.error('[AI Scan Error]', err?.message || err);
     if (err?.code === 'auth/argument-error' || err?.code === 'auth/id-token-expired') {
       res.status(401).json({ error: 'Invalid or expired token' });
     } else {

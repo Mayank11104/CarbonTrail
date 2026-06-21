@@ -23,7 +23,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     req.user = decodedClaims;
     next();
   } catch (error) {
-    console.error('Session verification error:', error);
+    // Session verification error
     return res.status(401).json({ error: 'Unauthorized: Invalid or expired session.' });
   }
 };
