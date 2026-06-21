@@ -16,6 +16,12 @@ export interface AIChallengeResponse {
   tasks: string[];
 }
 
+/**
+ * Fetches personalized insights from the AI coach based on user's weekly logs.
+ * @param idToken - Firebase authentication token
+ * @returns Promise resolving to the AI coach response
+ * @throws Error if the request fails
+ */
 export const fetchCoachInsight = async (idToken: string): Promise<AICoachResponse> => {
   const res = await fetch(`${BACKEND_URL}/api/ai/coach`, {
     method: 'POST',
@@ -33,6 +39,12 @@ export const fetchCoachInsight = async (idToken: string): Promise<AICoachRespons
   return res.json();
 };
 
+/**
+ * Fetches a personalized eco-challenge based on the user's worst performing category.
+ * @param idToken - Firebase authentication token
+ * @returns Promise resolving to the AI challenge response
+ * @throws Error if the request fails
+ */
 export const fetchPersonalizedChallenge = async (idToken: string): Promise<AIChallengeResponse> => {
   const res = await fetch(`${BACKEND_URL}/api/ai/challenge`, {
     method: 'POST',
@@ -58,6 +70,14 @@ export interface AIScanResponse {
   details: string;
 }
 
+/**
+ * Uploads a utility bill or receipt image to Gemini Vision for automated data extraction.
+ * @param idToken - Firebase authentication token
+ * @param base64Image - The base64 encoded image string (without data URI prefix)
+ * @param mimeType - The MIME type of the image (e.g., image/jpeg)
+ * @returns Promise resolving to the extracted scan data and carbon impact
+ * @throws Error if the scan fails
+ */
 export const uploadAndScanBill = async (
   idToken: string,
   base64Image: string,

@@ -267,9 +267,10 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
             {!isScanning && !isSaving && (
               <button
                 onClick={onClose}
+                aria-label="Close scan modal"
                 className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white border border-[#E8D5B0]/40 flex items-center justify-center text-[#1C1C1E]/30 hover:text-[#1C1C1E]/70 hover:border-[#E8D5B0] transition-all z-20"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             )}
 
@@ -314,7 +315,7 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                         onChange={handleChange}
                       />
                       <div className="w-12 h-12 rounded-full bg-[#E8D5B0]/30 flex items-center justify-center mb-4 text-primary">
-                        <Upload className="w-6 h-6" />
+                        <Upload className="w-6 h-6" aria-hidden="true" />
                       </div>
                       <p className="font-semibold text-sm text-[#1C1C1E] mb-1">
                         Drag and drop your image here
@@ -393,7 +394,7 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                     className="w-full flex-1 flex flex-col items-center justify-center text-center"
                   >
                     <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-3 text-red-500">
-                      <AlertCircle className="w-6 h-6" />
+                      <AlertCircle className="w-6 h-6" aria-hidden="true" />
                     </div>
                     <h3 className="font-bold text-sm text-[#1C1C1E] mb-1">Scan Unsuccessful</h3>
                     <p className="text-[12px] text-red-600/80 mb-4 max-w-xs">{error}</p>
@@ -401,7 +402,7 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                       onClick={resetScanState}
                       className="px-5 py-2 bg-primary text-white rounded-xl text-[12px] font-medium shadow-sm hover:shadow hover:bg-primary/95 transition-all duration-300 flex items-center gap-2 active:scale-[0.97]"
                     >
-                      <RefreshCw className="w-4 h-4" />
+                      <RefreshCw className="w-4 h-4" aria-hidden="true" />
                       Try Again
                     </button>
                   </motion.div>
@@ -425,7 +426,7 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                           animate={{ scale: 1, opacity: 1 }}
                           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                         >
-                          <Check className="w-7 h-7 stroke-[2.5]" />
+                          <Check className="w-7 h-7 stroke-[2.5]" aria-hidden="true" />
                         </motion.div>
                         <h3 className="font-bold text-[18px] text-[#1C1C1E] mb-1">Log Recorded!</h3>
                         <p className="text-[13px] text-[#1C1C1E]/50">

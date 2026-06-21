@@ -4,6 +4,7 @@ import { X, Check, ArrowLeft, Train, Utensils, Zap, ShoppingBag } from 'lucide-r
 import { saveLog } from '../api/logs';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../config/firebase';
+import { APP_CONSTANTS } from '../../../config/constants';
 
 export type LogCategory = 'transport' | 'food' | 'energy' | 'shopping' | 'all' | null;
 
@@ -121,12 +122,12 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
       setAmountError('Must be a valid number.');
       return;
     }
-    if (num <= 0) {
+    if (num <= APP_CONSTANTS.LOGS.MIN_AMOUNT) {
       setAmountError('Value must be greater than 0.');
       return;
     }
-    if (num > 10000) {
-      setAmountError('Value seems too large. Max is 10,000.');
+    if (num > APP_CONSTANTS.LOGS.MAX_AMOUNT) {
+      setAmountError(`Value seems too large. Max is ${APP_CONSTANTS.LOGS.MAX_AMOUNT}.`);
       return;
     }
 
@@ -137,7 +138,7 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
       setTimeout(() => {
         onClose();
         setSubmitted(false);
-      }, 1200);
+      }, APP_CONSTANTS.LOGS.SUCCESS_TIMEOUT_MS);
     } catch (error) {
       console.error('Error saving log:', error);
     }
@@ -182,9 +183,10 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
                   {/* Close button */}
                   <button
                     onClick={onClose}
+                    aria-label="Close modal"
                     className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white border border-[#E8D5B0]/40 flex items-center justify-center text-[#1C1C1E]/30 hover:text-[#1C1C1E]/70 hover:border-[#E8D5B0] transition-all z-10"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-4 h-4" aria-hidden="true" />
                   </button>
 
                   {/* Header */}
@@ -264,15 +266,17 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
                   <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
                     <button
                       onClick={handleBack}
+                      aria-label="Go back to categories"
                       className="w-8 h-8 rounded-full bg-white border border-[#E8D5B0]/40 flex items-center justify-center text-[#1C1C1E]/40 hover:text-[#1C1C1E]/70 hover:border-[#E8D5B0] transition-all"
                     >
-                      <ArrowLeft className="w-4 h-4" />
+                      <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                     </button>
                     <button
                       onClick={onClose}
+                      aria-label="Close modal"
                       className="w-8 h-8 rounded-full bg-white border border-[#E8D5B0]/40 flex items-center justify-center text-[#1C1C1E]/30 hover:text-[#1C1C1E]/70 hover:border-[#E8D5B0] transition-all"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
 
