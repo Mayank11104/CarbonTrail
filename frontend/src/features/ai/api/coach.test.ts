@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock global fetch
 const mockFetch = vi.fn()
-global.fetch = mockFetch
+globalThis.fetch = mockFetch as any
 
 // We need to mock import.meta.env before importing the module
 vi.stubEnv('VITE_BACKEND_URL', 'http://localhost:3000')
