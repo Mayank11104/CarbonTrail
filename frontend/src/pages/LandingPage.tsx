@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Leaf, TrendingDown, ArrowRight, Sparkles,
   Train, Utensils, Zap, ShoppingBag, ChevronRight,
-  Target, MessageCircle, Flame, ArrowDownRight, TreePine, Check,
+  Target, MessageCircle, Flame, ArrowDownRight, Check,
   LogOut
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -137,7 +137,7 @@ const LandingPage = () => {
               style={{ backgroundColor: 'rgba(27, 67, 50, 0.06)', border: '1px solid rgba(27, 67, 50, 0.1)', color: '#40916C' }}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Powered by Vertex AI & Genkit
+              Powered by Gemini AI
             </motion.div>
 
             <motion.h1
@@ -173,20 +173,14 @@ const LandingPage = () => {
               )}
             </motion.div>
 
-            {/* Social proof */}
+            {/* Trust signal */}
             <motion.div
               custom={4} variants={fadeUp} initial="hidden" animate="visible"
-              className="mt-8 lg:mt-12 flex items-center justify-center lg:justify-start gap-3"
+              className="mt-8 lg:mt-12 flex items-center justify-center lg:justify-start gap-2"
             >
-              <div className="flex -space-x-2">
-                {['#C07B52', '#40916C', '#1B4332', '#D97706'].map((color, i) => (
-                  <div key={i} className="w-8 h-8 lg:w-9 lg:h-9 rounded-full border-2 border-[#F5F3EF] flex items-center justify-center text-white text-[10px] lg:text-[11px] font-bold" style={{ backgroundColor: color }}>
-                    {['A', 'R', 'P', 'S'][i]}
-                  </div>
-                ))}
-              </div>
+              <Check className="w-4 h-4 text-secondary" />
               <p className="text-[12px] lg:text-[13px] text-on-surface/40 font-body-md">
-                <span className="font-semibold text-on-surface/60">2,400+</span> people tracking in Pune
+                Free to start · No credit card required
               </p>
             </motion.div>
           </div>
@@ -203,9 +197,12 @@ const LandingPage = () => {
                   <p className="text-[11px] lg:text-[12px] font-medium uppercase tracking-wider text-on-surface/30">Today's Budget</p>
                   <p className="text-[18px] lg:text-[22px] font-bold mt-0.5 font-display-lg">Looking good 🌿</p>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-container/15 text-secondary">
-                  <Flame className="w-3.5 h-3.5" />
-                  <span className="text-[11px] lg:text-[12px] font-semibold">7 day streak</span>
+                <div className="flex flex-col items-end gap-1.5">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-container/15 text-secondary">
+                    <Flame className="w-3.5 h-3.5" />
+                    <span className="text-[11px] lg:text-[12px] font-semibold">7 day streak</span>
+                  </div>
+                  <span className="text-[9px] font-medium text-on-surface/25 border border-outline-variant/30 px-1.5 py-0.5 rounded-full">Preview</span>
                 </div>
               </div>
 
@@ -254,17 +251,17 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ─── Impact Stats ─── */}
+      {/* ─── Product Facts ─── */}
       <section className="py-12 lg:py-16 px-6">
         <motion.div
           variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}
           className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-5"
         >
           {[
-            { value: '47K', label: 'kg CO₂ saved', icon: <ArrowDownRight className="w-5 h-5 text-secondary" />, accent: '#40916C' },
-            { value: '2.4K', label: 'active users', icon: <Sparkles className="w-5 h-5 text-tertiary" />, accent: '#C07B52' },
-            { value: '12K', label: 'tree-days earned', icon: <TreePine className="w-5 h-5 text-secondary" />, accent: '#40916C' },
-            { value: '94%', label: 'weekly retention', icon: <Flame className="w-5 h-5 text-tertiary" />, accent: '#C07B52' },
+            { value: '< 30s', label: 'to log each entry', icon: <Flame className="w-5 h-5 text-secondary" />, accent: '#40916C' },
+            { value: '4', label: 'activity categories', icon: <Target className="w-5 h-5 text-tertiary" />, accent: '#C07B52' },
+            { value: '7-day', label: 'AI analysis window', icon: <Sparkles className="w-5 h-5 text-secondary" />, accent: '#40916C' },
+            { value: '1', label: 'daily action nudge', icon: <ArrowDownRight className="w-5 h-5 text-tertiary" />, accent: '#C07B52' },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -393,11 +390,14 @@ const LandingPage = () => {
               custom={1} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
               className="bg-background rounded-2xl p-6 lg:p-8 border border-outline-variant/30 hover:shadow-md transition-all duration-300"
             >
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-9 h-9 rounded-full bg-primary-container/15 flex items-center justify-center">
-                  <TrendingDown className="w-4 h-4 text-secondary" />
+              <div className="flex items-center justify-between gap-2.5 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full bg-primary-container/15 flex items-center justify-center">
+                    <TrendingDown className="w-4 h-4 text-secondary" />
+                  </div>
+                  <p className="text-[11px] lg:text-[13px] font-semibold uppercase tracking-wider text-tertiary">Weekly Summary</p>
                 </div>
-                <p className="text-[11px] lg:text-[13px] font-semibold uppercase tracking-wider text-tertiary">Weekly Summary</p>
+                <span className="text-[10px] font-medium text-on-surface/30 border border-outline-variant/40 px-2 py-0.5 rounded-full">Example</span>
               </div>
               <p className="text-[14px] lg:text-[16px] leading-relaxed text-on-surface/60 font-body-md">
                 "You reduced by <strong className="text-secondary font-semibold">18% this week</strong> — mostly from 4 meatless days. Your energy spiked Thursday. Try keeping transport under 20 kg next week."
@@ -409,11 +409,14 @@ const LandingPage = () => {
               custom={2} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
               className="bg-background rounded-2xl p-6 lg:p-8 border border-outline-variant/30 hover:shadow-md transition-all duration-300"
             >
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-9 h-9 rounded-full bg-[#E8D5B0]/30 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-tertiary" />
+              <div className="flex items-center justify-between gap-2.5 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full bg-[#E8D5B0]/30 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-tertiary" />
+                  </div>
+                  <p className="text-[11px] lg:text-[13px] font-semibold uppercase tracking-wider text-tertiary">Daily Nudge</p>
                 </div>
-                <p className="text-[11px] lg:text-[13px] font-semibold uppercase tracking-wider text-tertiary">Daily Nudge</p>
+                <span className="text-[10px] font-medium text-on-surface/30 border border-outline-variant/40 px-2 py-0.5 rounded-full">Example</span>
               </div>
               <p className="text-[14px] lg:text-[16px] leading-relaxed text-on-surface/60 font-body-md">
                 "Based on your 14 rides this month, switching <strong className="text-secondary font-semibold">3 rides/week to metro</strong> saves 8 kg CO₂. That's 2 trees working for a month."
@@ -425,11 +428,14 @@ const LandingPage = () => {
               custom={3} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
               className="md:col-span-2 bg-background rounded-2xl p-6 lg:p-8 border border-outline-variant/30 hover:shadow-md transition-all duration-300"
             >
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-9 h-9 rounded-full bg-primary/8 flex items-center justify-center">
-                  <Train className="w-4 h-4 text-primary" />
+              <div className="flex items-center justify-between gap-2.5 mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full bg-primary/8 flex items-center justify-center">
+                    <Train className="w-4 h-4 text-primary" />
+                  </div>
+                  <p className="text-[11px] lg:text-[13px] font-semibold uppercase tracking-wider text-tertiary">Route Comparison</p>
                 </div>
-                <p className="text-[11px] lg:text-[13px] font-semibold uppercase tracking-wider text-tertiary">Route Comparison</p>
+                <span className="text-[10px] font-medium text-on-surface/30 border border-outline-variant/40 px-2 py-0.5 rounded-full">Example</span>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="bg-white rounded-xl p-5 lg:p-6 border border-outline-variant/30">
@@ -499,7 +505,7 @@ const LandingPage = () => {
             <span className="font-semibold text-[13px] lg:text-[14px] font-display-lg">CarbonTrail</span>
           </div>
           <p className="text-[11px] lg:text-[12px] text-on-surface/30 font-body-md">
-            Built with Vertex AI · Firebase Genkit · Google Maps APIs
+            Built with Gemini AI · Firebase · Google Cloud Run
           </p>
         </div>
       </footer>

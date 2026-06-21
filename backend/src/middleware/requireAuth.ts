@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
+import type { DecodedIdToken } from 'firebase-admin/auth';
 import { getAuth } from 'firebase-admin/auth';
 
-// Extend Express Request type to include the decoded user
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: DecodedIdToken;
     }
   }
 }
@@ -18,12 +18,10 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
   }
 
   try {
-    // Verify the session cookie and get the user's decoded claims
     const decodedClaims = await getAuth().verifySessionCookie(sessionCookie, true);
     req.user = decodedClaims;
     next();
-  } catch (error) {
-    // Session verification error
+  } catch {
     return res.status(401).json({ error: 'Unauthorized: Invalid or expired session.' });
   }
 };

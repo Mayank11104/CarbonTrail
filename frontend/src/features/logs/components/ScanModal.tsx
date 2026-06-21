@@ -1,47 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Train, Utensils, Zap, ShoppingBag, Upload, AlertCircle, RefreshCw } from 'lucide-react';
+import { X, Check, Upload, AlertCircle, RefreshCw } from 'lucide-react';
 import { saveScannedLog } from '../api/logs';
 import { uploadAndScanBill } from '../../ai/api/coach';
 import type { AIScanResponse } from '../../ai/api/coach';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../config/firebase';
+import { CATEGORY_CONFIG } from '../../../config/categories';
 
 interface ScanModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const CATEGORY_CONFIG = {
-  transport: {
-    title: 'Transport',
-    Icon: Train,
-    color: '#40916C',
-    blobColor: 'bg-[#94D4B1]/20',
-    textColor: 'text-[#40916C]',
-  },
-  food: {
-    title: 'Food',
-    Icon: Utensils,
-    color: '#C07B52',
-    blobColor: 'bg-[#E8D5B0]/30',
-    textColor: 'text-[#C07B52]',
-  },
-  energy: {
-    title: 'Energy',
-    Icon: Zap,
-    color: '#D97706',
-    blobColor: 'bg-[#FFD180]/20',
-    textColor: 'text-[#D97706]',
-  },
-  shopping: {
-    title: 'Shopping',
-    Icon: ShoppingBag,
-    color: '#1B4332',
-    blobColor: 'bg-[#95D5B2]/15',
-    textColor: 'text-[#1B4332]',
-  },
-};
 
 export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
   const [user] = useAuthState(auth);
@@ -108,7 +78,6 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       processFile(e.dataTransfer.files[0]);
     }
@@ -138,8 +107,9 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
 
         const result = await uploadAndScanBill(idToken, rawBase64, mimeType);
         setScanResult(result);
-      } catch (err: any) {
-        setError(err.message || 'Failed to scan the bill. Please try again.');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to scan the bill. Please try again.';
+        setError(message);
       } finally {
         setIsScanning(false);
       }
@@ -163,7 +133,7 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
         onClose();
         resetScanState();
       }, 1500);
-    } catch (err: any) {
+    } catch {
       setError('Failed to save log to database.');
     } finally {
       setIsSaving(false);
@@ -172,6 +142,13 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
 
   const onButtonClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleDropzoneKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onButtonClick();
+    }
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -189,7 +166,6 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
           transition={{ duration: 0.2 }}
           onClick={handleBackdropClick}
         >
-          {/* Internal CSS */}
           <style>{`
             .scan-modal-container {
               max-width: 500px;
@@ -212,9 +188,10 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
               border: 2px dashed #E8D5B0;
               height: 240px;
             }
-            .scan-dropzone:hover {
+            .scan-dropzone:hover, .scan-dropzone:focus-visible {
               border-color: rgba(64, 145, 108, 0.6);
               background-color: rgba(253, 253, 253, 0.5);
+              outline: none;
             }
             .scan-dropzone.drag-active {
               border-color: #40916C;
@@ -249,10 +226,8 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
             }
           `}</style>
 
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-[#1C1C1E]/40 backdrop-blur-sm" />
 
-          {/* Modal container */}
           <motion.div
             className="relative bg-[#F5F3EF] rounded-3xl shadow-2xl w-full overflow-hidden border border-[#E8D5B0]/40 z-10 scan-modal-container"
             initial={{ opacity: 0, y: 32, scale: 0.96 }}
@@ -261,7 +236,6 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
             transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button */}
             {!isScanning && !isSaving && (
               <button
                 onClick={onClose}
@@ -272,10 +246,9 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
               </button>
             )}
 
-            {/* Header */}
             <div className="pt-8 pb-4 px-8 border-b border-[#E8D5B0]/20">
               <div className="flex items-center gap-2.5 mb-1">
-                <span className="text-xl">📷</span>
+                <span className="text-xl" aria-hidden="true">📷</span>
                 <h2 className="text-[20px] font-bold text-[#1C1C1E] tracking-tight font-display">
                   Scan Bill or Receipt
                 </h2>
@@ -285,10 +258,9 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
               </p>
             </div>
 
-            {/* Content Area */}
             <div className="scan-content-area">
               <AnimatePresence mode="wait">
-                {/* 1. Drag & Drop File Upload Screen */}
+                {/* 1. Drag & Drop File Upload */}
                 {!file && !error && (
                   <motion.div
                     key="dropzone"
@@ -298,11 +270,15 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                     className="w-full flex-1 flex flex-col"
                   >
                     <div
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Upload bill or receipt image"
                       onDragEnter={handleDrag}
                       onDragLeave={handleDrag}
                       onDragOver={handleDrag}
                       onDrop={handleDrop}
                       onClick={onButtonClick}
+                      onKeyDown={handleDropzoneKeyDown}
                       className={`scan-dropzone ${dragActive ? 'drag-active' : ''}`}
                     >
                       <input
@@ -311,6 +287,7 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                         className="hidden"
                         accept="image/*"
                         onChange={handleChange}
+                        aria-hidden="true"
                       />
                       <div className="w-12 h-12 rounded-full bg-[#E8D5B0]/30 flex items-center justify-center mb-4 text-primary">
                         <Upload className="w-6 h-6" aria-hidden="true" />
@@ -323,6 +300,7 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                       </p>
                       <button
                         type="button"
+                        tabIndex={-1}
                         className="mt-4 px-4 py-2 bg-white hover:bg-neutral-50 text-[#1C1C1E] border border-[#E8D5B0] rounded-xl text-[12px] font-medium shadow-sm transition-all active:scale-[0.97]"
                       >
                         Browse files
@@ -331,7 +309,7 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                   </motion.div>
                 )}
 
-                {/* 2. Scanning / Processing Screen */}
+                {/* 2. Scanning / Processing */}
                 {file && isScanning && (
                   <motion.div
                     key="scanning"
@@ -339,29 +317,23 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="w-full flex-1 flex flex-col items-center justify-center py-2"
+                    aria-live="polite"
+                    aria-label="Scanning image with Gemini Vision"
                   >
-                    {/* Simulated Scanner UI */}
                     <div className="relative w-40 h-40 rounded-xl overflow-hidden shadow-md border border-[#E8D5B0]/40 bg-black/5 flex items-center justify-center">
                       {previewUrl && (
                         <img
                           src={previewUrl}
-                          alt="Receipt Preview"
+                          alt="Receipt preview being scanned"
                           className="absolute inset-0 w-full h-full object-cover opacity-60 filter blur-[0.5px]"
                         />
                       )}
-                      {/* Scanning Line overlay */}
                       <motion.div
                         className="absolute left-0 right-0 h-1 bg-[#40916C] shadow-[0_0_12px_#40916C] z-10"
                         initial={{ top: '0%' }}
                         animate={{ top: '100%' }}
-                        transition={{
-                          duration: 1.8,
-                          ease: 'easeInOut',
-                          repeat: Infinity,
-                          repeatType: 'reverse',
-                        }}
+                        transition={{ duration: 1.8, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse' }}
                       />
-                      {/* Scanner light effect */}
                       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#40916C]/10 to-transparent pointer-events-none" />
                     </div>
 
@@ -382,7 +354,7 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                   </motion.div>
                 )}
 
-                {/* 3. Error Screen */}
+                {/* 3. Error */}
                 {error && !isScanning && (
                   <motion.div
                     key="error"
@@ -390,6 +362,7 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     className="w-full flex-1 flex flex-col items-center justify-center text-center"
+                    role="alert"
                   >
                     <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-3 text-red-500">
                       <AlertCircle className="w-6 h-6" aria-hidden="true" />
@@ -406,7 +379,7 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                   </motion.div>
                 )}
 
-                {/* 4. Results Screen */}
+                {/* 4. Results */}
                 {scanResult && !isScanning && !error && (
                   <motion.div
                     key="results"
@@ -414,8 +387,8 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -12 }}
                     className="scan-result-wrapper"
+                    aria-live="polite"
                   >
-                    {/* Success / Save success screen */}
                     {saveSuccess ? (
                       <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
                         <motion.div
@@ -434,22 +407,21 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                     ) : (
                       <div className="flex-1 flex flex-col justify-between h-full">
                         <div>
-                          {/* Summary Box */}
                           <div className="p-4 rounded-2xl bg-white border border-[#E8D5B0]/30 shadow-sm flex items-start gap-4 mb-3">
                             {(() => {
-                              const config = CATEGORY_CONFIG[scanResult.category] || CATEGORY_CONFIG.shopping;
-                              const Icon = config.Icon;
+                              const conf = CATEGORY_CONFIG[scanResult.category] || CATEGORY_CONFIG.shopping;
+                              const Icon = conf.Icon;
                               return (
                                 <>
-                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0`} style={{ backgroundColor: config.color }}>
-                                    <Icon className="w-5 h-5" />
+                                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0" style={{ backgroundColor: conf.color }}>
+                                    <Icon className="w-5 h-5" aria-hidden="true" />
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-0.5">
                                       <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                                        {config.title}
+                                        {conf.title}
                                       </span>
-                                      <span className="text-xs font-bold text-[#1C1C1E]" style={{ color: config.color }}>
+                                      <span className="text-xs font-bold" style={{ color: conf.color }}>
                                         {scanResult.value} {scanResult.unit}
                                       </span>
                                     </div>
@@ -462,7 +434,6 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                             })()}
                           </div>
 
-                          {/* CO2 impact details */}
                           <div className="rounded-2xl bg-[#E8D5B0]/20 p-4 border border-[#E8D5B0]/30 flex items-center justify-between">
                             <div>
                               <p className="text-[10px] font-bold text-[#1C1C1E]/40 uppercase tracking-wider mb-0.5">
@@ -483,7 +454,6 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                           </div>
                         </div>
 
-                        {/* Footer Buttons inside Results Screen */}
                         <div className="scan-footer-row">
                           <button
                             onClick={resetScanState}
@@ -499,7 +469,7 @@ export const ScanModal = ({ isOpen, onClose }: ScanModalProps) => {
                           >
                             {isSaving ? (
                               <>
-                                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
                                 Saving...
                               </>
                             ) : (

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Leaf, LogOut, Flame, Train, Utensils,
-  Zap, ShoppingBag, Users, Trophy, ChevronRight, Sparkles, User, Bike, RefreshCw, Camera
+  Leaf, LogOut, Flame,
+  Users, Trophy, ChevronRight, Sparkles, User, Bike, RefreshCw, Camera
 } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
@@ -12,16 +12,8 @@ import { ScanModal } from '../features/logs/components/ScanModal';
 import { TrendsModal } from '../features/logs/components/TrendsModal';
 import { subscribeToDailyLogs, subscribeToStreak, subscribeToWeeklyLogs, type CarbonLog } from '../features/logs/api/logs';
 import { fetchCoachInsight, fetchPersonalizedChallenge, type AICoachResponse, type AIChallengeResponse } from '../features/ai/api/coach';
-
-// ── Category config ────────────────────────────────────────────────────────
-const CATEGORY_META = {
-  transport: { label: 'Transport', Icon: Train, color: '#40916C', blob: 'bg-[#94D4B1]/20' },
-  food: { label: 'Food', Icon: Utensils, color: '#C07B52', blob: 'bg-[#E8D5B0]/30' },
-  energy: { label: 'Energy', Icon: Zap, color: '#D97706', blob: 'bg-[#FFD180]/20' },
-  shopping: { label: 'Shopping', Icon: ShoppingBag, color: '#1B4332', blob: 'bg-[#95D5B2]/15' },
-} as const;
-
-type CategoryKey = keyof typeof CATEGORY_META;
+import { CATEGORY_CONFIG, type CategoryKey } from '../config/categories';
+import { APP_CONSTANTS } from '../config/constants';
 
 const DashboardPage = () => {
   const [user] = useAuthState(auth);
@@ -59,7 +51,7 @@ const DashboardPage = () => {
   // ── Computed values ──────────────────────────────────────────────────────
   const totalCarbonToday = todayLogs.reduce((sum, l) => sum + l.carbonImpact, 0);
 
-  const categoryTotals = (Object.keys(CATEGORY_META) as CategoryKey[]).reduce(
+  const categoryTotals = (Object.keys(CATEGORY_CONFIG) as CategoryKey[]).reduce(
     (acc, cat) => {
       acc[cat] = todayLogs
         .filter((l) => l.category === cat)
@@ -75,7 +67,7 @@ const DashboardPage = () => {
       : 0;
 
   // ── Ring logic ───────────────────────────────────────────────────────────
-  const dailyBudget = 15;
+  const dailyBudget = APP_CONSTANTS.LOGS.DAILY_BUDGET_KG;
   const progressPercent = Math.min(totalCarbonToday / dailyBudget, 1);
   const radius = 110;
   const circleCircumference = 2 * Math.PI * radius;
@@ -181,9 +173,7 @@ const DashboardPage = () => {
   // Auto-fetch on first load
   useEffect(() => {
     if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadCoachInsight();
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadChallenge();
     }
   }, [user, loadCoachInsight, loadChallenge]);
@@ -318,26 +308,26 @@ const DashboardPage = () => {
                   <h3 className="font-headline-lg text-[28px] text-primary font-bold">Community</h3>
                   <Users className="w-6 h-6 text-primary" />
                 </div>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4 bg-white/40 p-3 rounded-lg hover:bg-white/60 transition-colors">
+                <ul className="space-y-4" role="list" aria-label="Community activity highlights">
+                  <li className="flex items-center gap-4 bg-white/40 p-3 rounded-lg hover:bg-white/60 transition-colors">
                     <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center shrink-0">
-                      <Leaf className="w-5 h-5 text-on-secondary-container" />
+                      <Leaf className="w-5 h-5 text-on-secondary-container" aria-hidden="true" />
                     </div>
                     <div className="flex-1">
                       <p className="font-label-md text-[14px] leading-tight mb-1">Sarah joined the local tree planting event</p>
                       <p className="text-[12px] text-outline">2 hours ago</p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4 bg-white/40 p-3 rounded-lg hover:bg-white/60 transition-colors">
+                  </li>
+                  <li className="flex items-center gap-4 bg-white/40 p-3 rounded-lg hover:bg-white/60 transition-colors">
                     <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
-                      <Trophy className="w-5 h-5 text-on-primary-fixed" />
+                      <Trophy className="w-5 h-5 text-on-primary-fixed" aria-hidden="true" />
                     </div>
                     <div className="flex-1">
                       <p className="font-label-md text-[14px] leading-tight mb-1">Marcus saved 12kg of CO2 this week</p>
                       <p className="text-[12px] text-outline">5 hours ago</p>
                     </div>
-                  </div>
-                </div>
+                  </li>
+                </ul>
               </div>
 
               {/* Challenge Card */}
@@ -468,18 +458,20 @@ const DashboardPage = () => {
           <section className="lg:col-span-4 flex flex-col gap-[24px]">
 
             {/* Category Data Tiles — real data */}
-            <div className="grid grid-cols-2 gap-4">
-              {(Object.entries(CATEGORY_META) as [CategoryKey, typeof CATEGORY_META[CategoryKey]][]).map(([cat, meta]) => {
-                const { Icon, color, blob, label } = meta;
+            <div className="grid grid-cols-2 gap-4" role="list" aria-label="Today's emissions by category">
+              {(Object.entries(CATEGORY_CONFIG) as [CategoryKey, typeof CATEGORY_CONFIG[CategoryKey]][]).map(([cat, conf]) => {
+                const { Icon, color, blobColor, title } = conf;
                 const kg = categoryTotals[cat];
                 const pct = getPercentage(cat);
                 return (
                   <div
                     key={cat}
+                    role="listitem"
                     className="rounded-lg p-6 h-40 bg-surface flex flex-col justify-between border border-outline-variant/30 shadow-sm relative overflow-hidden"
+                    aria-label={`${title}: ${kg.toFixed(1)} kg CO2, ${pct}% of today`}
                   >
-                    <div className={`absolute top-0 right-0 w-24 h-24 ${blob} rounded-bl-full -translate-y-4 translate-x-4 pointer-events-none`} />
-                    <Icon className="w-7 h-7" style={{ color }} />
+                    <div className={`absolute top-0 right-0 w-24 h-24 ${blobColor} rounded-bl-full -translate-y-4 translate-x-4 pointer-events-none`} aria-hidden="true" />
+                    <Icon className="w-7 h-7" style={{ color }} aria-hidden="true" />
                     <div>
                       <div className="flex items-end justify-between mb-1">
                         <span className="font-display-lg text-[24px] font-bold leading-none text-[#1C1C1E]">
@@ -490,7 +482,7 @@ const DashboardPage = () => {
                         </span>
                       </div>
                       <span className="font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider">
-                        {label} (kg)
+                        {title} (kg)
                       </span>
                     </div>
                   </div>
@@ -520,22 +512,24 @@ const DashboardPage = () => {
                 </button>
               </div>
 
-              {isLoadingCoach ? (
-                <div className="relative z-10 space-y-2 animate-pulse">
-                  <div className="h-4 bg-white/20 rounded w-full" />
-                  <div className="h-4 bg-white/20 rounded w-4/5" />
-                  <div className="h-4 bg-white/20 rounded w-3/5" />
-                </div>
-              ) : coachError ? (
-                <p className="font-body-lg text-[14px] text-white/60 relative z-10">{coachError}</p>
-              ) : aiCoach ? (
-                <div className="relative z-10">
-                  <p className="font-body-lg text-[16px] text-white leading-relaxed mb-2">{aiCoach.insight}</p>
-                  <p className="text-[13px] text-white/70 font-medium">💡 {aiCoach.tip}</p>
-                </div>
-              ) : (
-                <p className="font-body-lg text-[16px] text-white/60 relative z-10">Loading your personalized insight...</p>
-              )}
+              <div aria-live="polite" aria-atomic="true" className="relative z-10">
+                {isLoadingCoach ? (
+                  <div className="space-y-2 animate-pulse" aria-label="Loading AI coach insight">
+                    <div className="h-4 bg-white/20 rounded w-full" />
+                    <div className="h-4 bg-white/20 rounded w-4/5" />
+                    <div className="h-4 bg-white/20 rounded w-3/5" />
+                  </div>
+                ) : coachError ? (
+                  <p className="font-body-lg text-[14px] text-white/60" role="alert">{coachError}</p>
+                ) : aiCoach ? (
+                  <div>
+                    <p className="font-body-lg text-[16px] text-white leading-relaxed mb-2">{aiCoach.insight}</p>
+                    <p className="text-[13px] text-white/70 font-medium">💡 {aiCoach.tip}</p>
+                  </div>
+                ) : (
+                  <p className="font-body-lg text-[16px] text-white/60">Loading your personalized insight...</p>
+                )}
+              </div>
             </div>
 
             {/* Recommended Actions — real AI data */}
@@ -543,23 +537,23 @@ const DashboardPage = () => {
               <h3 className="font-label-md text-[14px] font-bold text-on-surface-variant uppercase tracking-widest">
                 Recommended Actions
               </h3>
-              <div className="flex flex-col gap-4">
+              <ul className="flex flex-col gap-4" role="list" aria-label="Recommended eco actions" aria-live="polite">
                 {(aiCoach?.actions ?? ['Switch to LED bulbs', 'Try a weekend bike trip']).map((action, i) => (
-                  <div
+                  <li
                     key={i}
                     className="flex items-center justify-between p-4 bg-white/40 rounded-xl hover:bg-white/60 hover:shadow-sm transition-all cursor-pointer border border-transparent hover:border-white/50"
                   >
                     <div className="flex items-center gap-3">
                       {i % 2 === 0
-                        ? <Leaf className="w-5 h-5 text-secondary shrink-0" />
-                        : <Bike className="w-5 h-5 text-secondary shrink-0" />
+                        ? <Leaf className="w-5 h-5 text-secondary shrink-0" aria-hidden="true" />
+                        : <Bike className="w-5 h-5 text-secondary shrink-0" aria-hidden="true" />
                       }
                       <span className="font-label-md text-[14px] font-bold text-on-surface">{action}</span>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-outline shrink-0" />
-                  </div>
+                    <ChevronRight className="w-5 h-5 text-outline shrink-0" aria-hidden="true" />
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
 
           </section>

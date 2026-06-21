@@ -15,7 +15,17 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Security Headers (Helmet) - strict defaults for production HTTPS
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "apis.google.com", "www.gstatic.com"],
+      connectSrc: ["'self'", "identitytoolkit.googleapis.com", "securetoken.googleapis.com"],
+      frameSrc: ["'self'", "carbontrail-74b5b.firebaseapp.com"]
+    }
+  },
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
+}));
 
 // Rate Limiting (DoS prevention)
 const limiter = rateLimit({
@@ -25,8 +35,13 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Middleware
-app.use(cors({ origin: true, credentials: true })); // Ensure credentials can be sent
+// CORS — locked to explicit origin in production, permissive in development
+const corsOrigin: cors.CorsOptions['origin'] =
+  process.env.NODE_ENV === 'production'
+    ? (process.env.ALLOWED_ORIGIN || false)
+    : true;
+
+app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json({ limit: '10kb' })); // Body parser limit to prevent payload attacks
 app.use(cookieParser());
 app.use(hpp()); // HTTP Parameter Pollution prevention
@@ -58,7 +73,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port as number, '0.0.0.0', () => {
-    console.log(`Server is running on port ${port}`);
+    // Server started
   });
 }
 

@@ -12,11 +12,9 @@ export interface AICoachResponse {
 }
 
 export const getCoachInsight = async (idToken: string): Promise<AICoachResponse> => {
-  // 1. Verify Firebase ID token
   const decoded = await adminAuth.verifyIdToken(idToken);
   const uid = decoded.uid;
 
-  // 2. Fetch last 7 days of logs from Firestore
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   sevenDaysAgo.setHours(0, 0, 0, 0);
@@ -26,7 +24,6 @@ export const getCoachInsight = async (idToken: string): Promise<AICoachResponse>
     .where('timestamp', '>=', sevenDaysAgo)
     .get();
 
-  // 3. Aggregate data by category
   const categoryTotals: Record<string, number> = {
     transport: 0,
     food: 0,
@@ -48,7 +45,6 @@ export const getCoachInsight = async (idToken: string): Promise<AICoachResponse>
   weeklyTotal = Number(weeklyTotal.toFixed(2));
   const worstCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0][0];
 
-  // 4. Build Gemini prompt
   const prompt = `
 You are a carbon footprint coach for CarbonTrail, a sustainability app.
 
@@ -75,17 +71,14 @@ Rules:
 - If all values are 0, encourage the user to start logging
 `.trim();
 
-  // 5. Call Gemini
   const result = await ai.models.generateContent({
     model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
     contents: prompt,
   });
   const text = (result.text || '').trim();
 
-  // 6. Parse JSON response
   let parsed: Omit<AICoachResponse, 'worstCategory' | 'weeklyTotal'>;
   try {
-    // Strip markdown code fences if Gemini wraps it anyway
     const clean = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '').trim();
     parsed = JSON.parse(clean);
   } catch {
@@ -113,11 +106,9 @@ export interface AIChallengeResponse {
 }
 
 export const getPersonalizedChallenge = async (idToken: string): Promise<AIChallengeResponse> => {
-  // 1. Verify Firebase ID token
   const decoded = await adminAuth.verifyIdToken(idToken);
   const uid = decoded.uid;
 
-  // 2. Fetch last 7 days of logs from Firestore
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   sevenDaysAgo.setHours(0, 0, 0, 0);
@@ -127,7 +118,6 @@ export const getPersonalizedChallenge = async (idToken: string): Promise<AIChall
     .where('timestamp', '>=', sevenDaysAgo)
     .get();
 
-  // 3. Aggregate data by category
   const categoryTotals: Record<string, number> = {
     transport: 0,
     food: 0,
@@ -146,7 +136,6 @@ export const getPersonalizedChallenge = async (idToken: string): Promise<AIChall
 
   const worstCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0][0];
 
-  // 4. Build challenge prompt
   const prompt = `
 You are a carbon footprint coach for CarbonTrail, a sustainability app.
 
@@ -178,14 +167,12 @@ Rules:
 - Do not use markdown backticks, code block wrappers, or other formatting. Return only raw JSON.
 `.trim();
 
-  // 5. Call Gemini
   const result = await ai.models.generateContent({
     model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
     contents: prompt,
   });
   const text = (result.text || '').trim();
 
-  // 6. Parse JSON response
   let parsed: AIChallengeResponse;
   try {
     const clean = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '').trim();
@@ -221,10 +208,8 @@ export const scanReceiptOrBill = async (
   base64Image: string,
   mimeType: string
 ): Promise<AIScanResponse> => {
-  // 1. Verify token
   await adminAuth.verifyIdToken(idToken);
 
-  // 2. Build prompt
   const prompt = `
 You are an expert carbon footprint assistant for CarbonTrail. 
 Analyze the provided image of a receipt, ticket, invoice, or utility bill.
@@ -252,7 +237,6 @@ Rules:
 - Do not wrap the JSON in markdown code blocks like \`\`\`json. Return only raw JSON.
 `.trim();
 
-  // 3. Call Gemini Vision
   const result = await ai.models.generateContent({
     model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
     contents: [
@@ -268,7 +252,6 @@ Rules:
 
   const text = (result.text || '').trim();
 
-  // 4. Parse response
   let parsed: AIScanResponse;
   try {
     const clean = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '').trim();

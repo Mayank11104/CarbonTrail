@@ -3,45 +3,45 @@ import { getAuth } from 'firebase-admin/auth';
 
 const router = Router();
 
-// Create session cookie
+/**
+ * POST /api/auth/session
+ * Creates an httpOnly session cookie after verifying the Firebase ID token.
+ * Requires the user to have signed in within the last 5 minutes (replay attack prevention).
+ */
 router.post('/session', async (req, res) => {
   const idToken = req.body.idToken?.toString();
 
   if (!idToken) {
-    return res.status(401).send('UNAUTHORIZED REQUEST!');
+    return res.status(401).json({ error: 'Unauthorized: No ID token provided.' });
   }
 
-  // Set session expiration to 7 days.
-  const expiresIn = 60 * 60 * 24 * 7 * 1000;
+  const expiresIn = 60 * 60 * 24 * 7 * 1000; // 7 days
 
   try {
-    // Verify the ID token first.
     const decodedIdToken = await getAuth().verifyIdToken(idToken);
 
-    // Only process if the user just signed in in the last 5 minutes.
     if (new Date().getTime() / 1000 - decodedIdToken.auth_time < 5 * 60) {
-      // Create the session cookie. This will also verify the ID token in the process.
-      // The session cookie will have the same claims as the ID token.
       const sessionCookie = await getAuth().createSessionCookie(idToken, { expiresIn });
-
-      const options = { 
-        maxAge: expiresIn, 
-        httpOnly: true, 
+      const options = {
+        maxAge: expiresIn,
+        httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict' as const
+        sameSite: 'strict' as const,
       };
       res.cookie('session', sessionCookie, options);
-      res.end(JSON.stringify({ status: 'success' }));
+      res.json({ status: 'success' });
     } else {
-      res.status(401).send('Recent sign in required!');
+      res.status(401).json({ error: 'Recent sign in required.' });
     }
-  } catch (error) {
-    // Session cookie error
-    res.status(401).send('UNAUTHORIZED REQUEST!');
+  } catch {
+    res.status(401).json({ error: 'Unauthorized: Invalid ID token.' });
   }
 });
 
-// Clear session cookie on logout
+/**
+ * POST /api/auth/logout
+ * Clears the session cookie.
+ */
 router.post('/logout', (req, res) => {
   res.clearCookie('session');
   res.json({ status: 'success' });

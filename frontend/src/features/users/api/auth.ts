@@ -1,17 +1,18 @@
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signInWithPopup, 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
   GoogleAuthProvider,
   signOut,
-  updateProfile
+  updateProfile,
+  type User,
 } from 'firebase/auth';
 import { auth } from '../../../config/firebase';
+import { BACKEND_URL } from '../../../config/constants';
 
 const googleProvider = new GoogleAuthProvider();
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
-const createBackendSession = async (user: any) => {
+const createBackendSession = async (user: User) => {
   const idToken = await user.getIdToken();
   await fetch(`${BACKEND_URL}/api/auth/session`, {
     method: 'POST',
@@ -21,25 +22,27 @@ const createBackendSession = async (user: any) => {
   });
 };
 
+const getErrorMessage = (err: unknown): string =>
+  err instanceof Error ? err.message : 'An unexpected error occurred.';
+
 export const loginWithEmail = async (email: string, password: string) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     await createBackendSession(userCredential.user);
     return { user: userCredential.user, error: null };
-  } catch (error: any) {
-    return { user: null, error: error.message };
+  } catch (err) {
+    return { user: null, error: getErrorMessage(err) };
   }
 };
 
 export const registerWithEmail = async (name: string, email: string, password: string) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    // Update the profile with the user's name
     await updateProfile(userCredential.user, { displayName: name });
     await createBackendSession(userCredential.user);
     return { user: userCredential.user, error: null };
-  } catch (error: any) {
-    return { user: null, error: error.message };
+  } catch (err) {
+    return { user: null, error: getErrorMessage(err) };
   }
 };
 
@@ -48,23 +51,20 @@ export const loginWithGoogle = async () => {
     const userCredential = await signInWithPopup(auth, googleProvider);
     await createBackendSession(userCredential.user);
     return { user: userCredential.user, error: null };
-  } catch (error: any) {
-    return { user: null, error: error.message };
+  } catch (err) {
+    return { user: null, error: getErrorMessage(err) };
   }
 };
 
 export const logoutUser = async () => {
   try {
-    // Clear backend session cookie first
     await fetch(`${BACKEND_URL}/api/auth/logout`, {
       method: 'POST',
       credentials: 'include',
     });
-    
-    // Then clear Firebase client auth state
     await signOut(auth);
     return { error: null };
-  } catch (error: any) {
-    return { error: error.message };
+  } catch (err) {
+    return { error: getErrorMessage(err) };
   }
 };

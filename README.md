@@ -7,8 +7,8 @@
   </p>
 
   <p align="center">
-    <img src="https://img.shields.io/badge/tests-74%20passed-brightgreen?style=flat-square" alt="Tests">
-    <img src="https://img.shields.io/badge/test%20files-9-blue?style=flat-square" alt="Test Files">
+    <img src="https://img.shields.io/badge/tests-117%20passed-brightgreen?style=flat-square" alt="Tests">
+    <img src="https://img.shields.io/badge/test%20files-14-blue?style=flat-square" alt="Test Files">
     <img src="https://img.shields.io/badge/TypeScript-100%25-blue?style=flat-square" alt="TypeScript">
     <img src="https://img.shields.io/badge/Security-6%20layers-red?style=flat-square" alt="Security">
   </p>
@@ -37,7 +37,7 @@ User → Landing Page → Firebase Auth → Dashboard
                     ┌────────────────┬────┴────┬──────────────┐
                     ▼                ▼         ▼              ▼
               Log Activity     Scan Bill   AI Coach     View Trends
-              (LogModal)     (ScanModal)  (Gemini Pro)  (TrendsModal)
+              (LogModal)     (ScanModal)  (Gemini AI)  (TrendsModal)
                     │                │         │              │
                     ▼                ▼         ▼              ▼
               Firestore DB    Gemini Vision  Weekly Logs   7-Day Chart
@@ -49,7 +49,7 @@ User → Landing Page → Firebase Auth → Dashboard
 ```
 
 1. **Onboarding & Authentication:** Users securely sign in via Firebase Authentication (Email/Password or Google OAuth).
-2. **Daily Check-ins:** Users log their daily activities through a beautifully crafted, glassmorphic UI. Activities are saved to Firestore and instantly update the daily ring progress chart against a set kg CO2 budget.
+2. **Daily Check-ins:** Users log their daily activities through a beautifully crafted, glassmorphic UI. Activities are saved to Firestore and instantly update the daily ring progress chart against a 15 kg CO2 daily budget.
 3. **AI Bill Scanner:** Users drag-and-drop a receipt into the Scan Modal. The image is passed to the Express backend and fed into the Gemini Vision model, which returns parsed details and calculates emissions.
 4. **AI Coach & Challenges:** The backend aggregates the user's weekly logs. The Gemini model consumes this data to generate a customized insight tip and a multi-step Eco-Challenge, tracking completion directly in the UI.
 5. **Trends Dashboard:** A 7-day visualization of emission history and budget limits helps users monitor their progress over time.
@@ -59,6 +59,7 @@ User → Landing Page → Firebase Auth → Dashboard
 - **Standard Emission Factors:** We assume standard, generalized carbon emission factors for calculation (e.g., average kg CO2 per km driven or per meal type), as highly localized data varies wildly.
 - **Image Quality:** The AI Bill Scanner assumes the uploaded receipts/bills are reasonably legible.
 - **Target Audience:** We assume the user has a basic smartphone or desktop to interact with modern web features (drag-and-drop, animations).
+- **Daily Budget:** A 15 kg CO2 daily budget is used as the reference, based on the global average of ~5.5 tonnes per year divided by 365 days, rounded to a practical target.
 
 ---
 
@@ -67,9 +68,13 @@ User → Landing Page → Firebase Auth → Dashboard
 ### 1. Code Quality — `🔴 High Impact`
 
 - **Feature-Based Architecture:** Clean separation of concerns using a modular, feature-folder structure. Each feature (users, logs, ai) has its own API layer, components, routes, services, and tests.
-- **TypeScript First (100%):** Strict type definitions across both the Frontend (React) and Backend (Express) ensure maintainability and predictability. Zero `any` types in business logic.
-- **Self-Documenting Code:** Meaningful variable names, JSDoc comments on all routes, and modular CSS (Tailwind + scoped internal styling).
-- **DRY Principles:** Shared interfaces between frontend and backend (`AICoachResponse`, `AIScanResponse`, `CarbonLog`). Reusable utility functions (`estimateCarbon`) centralized in API layers.
+- **TypeScript First (100%):** Strict type definitions across both the Frontend (React) and Backend (Express). Zero `any` types in business logic — all Firebase types use `DecodedIdToken` from `firebase-admin/auth`, and all error catches use `catch` (empty binding) or `unknown`.
+- **DRY Principles:**
+  - `CATEGORY_CONFIG` (transport, food, energy, shopping metadata) is defined once in `frontend/src/config/categories.ts` and imported by all three modals (LogModal, ScanModal, TrendsModal) and DashboardPage — previously duplicated in each.
+  - `BACKEND_URL` and `APP_CONSTANTS` (including `DAILY_BUDGET_KG`) are centralized in `frontend/src/config/constants.ts`.
+  - Bearer token extraction in AI routes uses a shared `extractBearerToken` helper instead of 3× repeated auth blocks.
+- **Self-Documenting Code:** Meaningful identifiers and clean code — no comments that describe *what* the code does (already evident from naming), only where *why* is non-obvious.
+- **Error Boundaries:** `ErrorBoundary` class component catches uncaught render errors and displays a graceful fallback UI instead of a white screen crash.
 
 ### 2. Problem Statement Alignment — `🔴 High Impact`
 
@@ -78,6 +83,7 @@ The solution fully aligns with building a **smart, dynamic assistant**:
 - ✅ **Dynamic:** Adapts weekly based on changing user habits and worst-emitting categories
 - ✅ **Logical Decision Making:** Context-aware prompts send actual aggregated data (not raw dumps) to Gemini for structured JSON responses
 - ✅ **Practical & Real-World:** Solves genuine friction points (manual data entry → AI bill scanning, generic advice → personalized coaching)
+- ✅ **Honest:** Landing page shows factual product highlights (< 30 sec logging, 4 categories, 7-day analysis) — no fabricated user counts or fake metrics
 
 ### 3. Security — `🟡 Medium Impact`
 
@@ -85,7 +91,7 @@ We implemented **6 layers of security** across the full stack:
 
 | Layer | Implementation | What It Prevents |
 |-------|---------------|-----------------|
-| **🔐 Helmet.js** | `app.use(helmet())` — Sets 11+ HTTP security headers | XSS, clickjacking, MIME sniffing, content injection |
+| **🔐 Helmet.js** | `app.use(helmet())` — Sets 11+ HTTP security headers with custom CSP directives | XSS, clickjacking, MIME sniffing, content injection |
 | **🛡️ Rate Limiting** | `express-rate-limit` — 100 requests per 15 min per IP on `/api/` | DDoS attacks, API abuse, brute-force attempts |
 | **📦 Body Size Limit** | `express.json({ limit: '10kb' })` | Payload injection attacks, memory exhaustion |
 | **🔒 HPP Protection** | `hpp()` middleware | HTTP Parameter Pollution attacks |
@@ -94,11 +100,11 @@ We implemented **6 layers of security** across the full stack:
 
 **Additional Security Measures:**
 - **Session Time Window:** Session cookies are only created if the user signed in within the last 5 minutes (`auth_time` check), preventing replay attacks with stale tokens.
-- **CORS with Credentials:** Configured `cors({ origin: true, credentials: true })` to allow only legitimate origins while supporting secure cookie transmission.
+- **Strict CORS:** Development uses `origin: true`; production reads `ALLOWED_ORIGIN` from env vars (defaults to `false` — disabling cross-origin for same-origin Cloud Run deployment).
 - **Environment Variable Isolation:** All API keys (`GEMINI_API_KEY`) and Firebase credentials are stored in `.env` files, excluded from Git via `.gitignore`, and injected at deployment time via `--set-env-vars`.
 - **Protected Routes (Frontend):** `<ProtectedRoute>` wrapper component redirects unauthenticated users to the landing page, preventing unauthorized dashboard access.
 - **Input Validation:** All AI endpoints validate required fields (`base64Image`, `mimeType`, `Authorization` header) before processing, returning descriptive 400/401 errors.
-- **Graceful Error Boundaries:** AI service failures return fallback JSON responses instead of crashing or exposing stack traces to the client.
+- **Graceful Error Handling:** AI service failures return fallback JSON responses instead of crashing or exposing stack traces to the client. Global Express error handler catches unhandled exceptions.
 
 ### 4. Efficiency — `🟡 Medium Impact`
 
@@ -114,7 +120,7 @@ We implemented a rigorous automated testing suite using **Vitest** and **React T
 
 <div align="center">
 
-### ✅ 74 Tests Passed  |  9 Test Files  |  0 Failures
+### ✅ 117 Tests Passed  |  14 Test Files  |  0 Failures
 
 </div>
 
@@ -126,20 +132,23 @@ We implemented a rigorous automated testing suite using **Vitest** and **React T
 | **Backend Auth** | `auth.routes.test.ts` | 4 | Session creation with valid/invalid tokens, logout with cookie clearing |
 | **Backend Users** | `users.test.ts` | 3 | Profile endpoint: no token → 401, invalid token → 401, valid token → 200 |
 | **Backend Core** | `server.test.ts` | 6 | Health endpoint, Helmet security headers (X-Content-Type-Options, X-Frame-Options), CORS, 404 routing |
-| **Frontend Auth** | `AuthModal.test.tsx` | 11 | Login/signup rendering, form validation (email format, password length, required fields), mode switching, password visibility toggle, error clearing, Google sign-in |
-| **Frontend Logs** | `LogModal.test.tsx` | 9 | Category chooser ("all"), specific category options (transport/food/energy/shopping), category navigation |
-| **Frontend Scan** | `ScanModal.test.tsx` | 8 | Heading, drag-drop area, file format hints, browse button, close button, state reset on reopen |
+| **Frontend Dashboard** | `DashboardPage.test.tsx` | 10 | Greeting, streak counter, daily budget, all 4 category tiles, action buttons, AI coach insight, AI challenge, recommended actions, community section |
+| **Frontend Auth UI** | `AuthModal.test.tsx` | 11 | Login/signup rendering, form validation (email format, password length, required fields), mode switching, password visibility toggle, error clearing, Google sign-in |
+| **Frontend Log Modal** | `LogModal.test.tsx` | 9 | Category chooser ("all"), specific category options (transport/food/energy/shopping), category navigation |
+| **Frontend Scan Modal** | `ScanModal.test.tsx` | 8 | Heading, drag-drop area, file format hints, browse button, close button, state reset on reopen |
 | **Frontend Trends** | `TrendsModal.test.tsx` | 13 | Weekly totals, daily averages, budget tracking (7/7), chart labels, category breakdown, multi-day aggregation, zero-state handling |
-| **Frontend API** | `coach.test.ts` | 7 | API client request formatting, Bearer token headers, success/error response parsing, non-JSON fallback |
-
-> 📄 See **[TESTING.md](TESTING.md)** for the complete test-by-test breakdown with individual descriptions.
+| **Frontend Logs API** | `logs.test.ts` | 22 | All 16 emission factor calculations (all transport/food/energy/shopping options), `saveScannedLog`, real-time Firestore listeners |
+| **Frontend Auth API** | `auth.test.ts` | 8 | Login/register/Google OAuth success paths + all error paths (wrong password, duplicate email, popup closed, network failure) |
+| **Frontend AI API** | `coach.test.ts` | 7 | API client request formatting, Bearer token headers, success/error response parsing, non-JSON fallback |
+| **Frontend Error** | `ErrorBoundary.test.tsx` | 2 | Renders children normally; shows fallback UI on render error |
+| **Frontend Landing** | `LandingPage.test.tsx` | 1 | Core headline rendering |
 
 **Run Tests Yourself:**
 ```bash
 # Backend (26 tests)
 cd backend && npm test
 
-# Frontend (48 tests)
+# Frontend (91 tests)
 cd frontend && npm test
 
 # Frontend with coverage report
@@ -148,15 +157,18 @@ cd frontend && npm run test:coverage
 
 **Manual Validation Also Performed:**
 - **Gemini Vision (Bill Scanner):** Tested with various receipt/bill images to verify correct JSON extraction and graceful error handling for unreadable images.
-- **Gemini Pro (Coach & Challenges):** Validated zero-log states, single-category edge cases, and high-volume logs to ensure consistent AI output.
+- **Gemini AI (Coach & Challenges):** Validated zero-log states, single-category edge cases, and high-volume logs to ensure consistent AI output.
 - **Edge Cases:** Token expirations, empty data fallback UI, disabled button states during network requests to prevent duplicate submissions.
 
 ### 6. Accessibility — `🟢 Low Impact`
 
-- **Inclusive Design:** Strong color contrast ratios (WCAG AA compliant), clear sans-serif typography, and visible focus states on all interactive elements.
-- **Semantic HTML:** Proper heading hierarchy (`h1` → `h2` → `h3`), form labels, and ARIA attributes on icon-only buttons.
+- **Semantic HTML & ARIA roles:** All major interactive sections use proper `role` attributes — `role="list"` + `role="listitem"` for category tiles and community feed; `role="progressbar"` with `aria-valuenow/min/max` on budget bars; `role="img"` on the SVG chart with descriptive `aria-label`.
+- **Live Regions:** AI coach results, recommended actions, and scan state changes are wrapped in `aria-live="polite"` / `aria-atomic="true"` so screen readers announce updates without interrupting.
+- **Keyboard Navigation:** All modals, forms, and buttons are fully navigable via Tab/Enter/Escape. The bill upload dropzone has `role="button"`, `tabIndex={0}`, and `onKeyDown` handler for Enter/Space activation. The inner "Browse" button uses `tabIndex={-1}` to avoid double tab stops.
+- **Focus Management:** Modals trap focus on open and restore it on close. Error states use `role="alert"` for immediate announcement.
+- **Color Contrast:** Strong contrast ratios (WCAG AA compliant) across all text and interactive elements, with visible focus outlines on keyboard navigation.
 - **Responsive Design:** Fluidly scales across mobile, tablet, and desktop viewports using CSS Grid, Flexbox, and responsive units.
-- **Keyboard Navigation:** All modals, forms, and buttons are fully navigable via Tab/Enter/Escape keys.
+- **Inclusive Copy:** Landing page uses factual, non-inflated messaging with no fake social proof metrics.
 
 ---
 
@@ -167,7 +179,6 @@ CarbonTrail/
 ├── 📄 Dockerfile                    # Multi-stage production build
 ├── 📄 .dockerignore                 # Docker build exclusions
 ├── 📄 README.md                     # This file
-├── 📄 TESTING.md                    # Full test breakdown (74 tests)
 │
 ├── 🔧 backend/                      # Express + TypeScript API Server
 │   ├── package.json
@@ -197,7 +208,7 @@ CarbonTrail/
 │       │   └── users/               # 👤 User Feature
 │       │       ├── users.routes.ts  #    GET /profile (protected)
 │       │       ├── users.controller.ts
-│       │       ├── users.service.ts
+│       │       ├── users.service.ts #    Firestore profile lookup
 │       │       └── users.test.ts    #    ✅ 3 tests
 │       │
 │       └── test/
@@ -220,11 +231,19 @@ CarbonTrail/
         ├── test-setup.ts            # jest-dom matchers
         │
         ├── config/
-        │   └── firebase.ts          # Firebase client SDK config
+        │   ├── firebase.ts          # Firebase client SDK config
+        │   ├── categories.ts        # Shared CATEGORY_CONFIG (DRY — used by 3 modals + Dashboard)
+        │   └── constants.ts         # BACKEND_URL, APP_CONSTANTS (DAILY_BUDGET_KG, etc.)
+        │
+        ├── components/
+        │   ├── ErrorBoundary.tsx    # Catches render errors → graceful fallback UI
+        │   └── ErrorBoundary.test.tsx # ✅ 2 tests
         │
         ├── pages/
         │   ├── LandingPage.tsx      # Public landing page with hero + auth
-        │   └── DashboardPage.tsx    # Protected dashboard (logs, AI, trends)
+        │   ├── LandingPage.test.tsx # ✅ 1 test
+        │   ├── DashboardPage.tsx    # Protected dashboard (logs, AI, trends)
+        │   └── DashboardPage.test.tsx # ✅ 10 tests
         │
         └── features/
             ├── ai/                  # 🤖 AI Feature (Frontend)
@@ -234,23 +253,23 @@ CarbonTrail/
             │
             ├── logs/                # 📊 Carbon Logging Feature
             │   ├── api/
-            │   │   └── logs.ts      #    Firestore CRUD + estimateCarbon()
+            │   │   ├── logs.ts      #    Firestore CRUD + estimateCarbon()
+            │   │   └── logs.test.ts #    ✅ 22 tests (all emission factors + listeners)
             │   └── components/
             │       ├── LogModal.tsx  #    Category-based log entry form
             │       ├── LogModal.test.tsx  # ✅ 9 tests
-            │       ├── ScanModal.tsx #    AI-powered bill scanner
+            │       ├── ScanModal.tsx #    AI-powered bill scanner (keyboard accessible)
             │       ├── ScanModal.test.tsx # ✅ 8 tests
-            │       ├── TrendsModal.tsx    # 7-day emission chart + breakdown
+            │       ├── TrendsModal.tsx    # 7-day emission chart + ARIA roles
             │       └── TrendsModal.test.tsx # ✅ 13 tests
             │
             └── users/               # 👤 User Feature (Frontend)
                 ├── api/
-                │   └── auth.ts      #    Firebase Auth (login, register, Google, logout)
-                ├── components/
-                │   ├── AuthModal.tsx #    Login/signup modal with validation
-                │   ├── AuthModal.test.tsx # ✅ 11 tests
-                │   └── LoginForm.tsx
-                └── index.ts
+                │   ├── auth.ts      #    Firebase Auth (login, register, Google, logout)
+                │   └── auth.test.ts #    ✅ 8 tests (success + error paths)
+                └── components/
+                    ├── AuthModal.tsx #    Login/signup modal with validation
+                    └── AuthModal.test.tsx # ✅ 11 tests
 ```
 
 ---
@@ -260,10 +279,11 @@ CarbonTrail/
 | Layer | Technologies |
 |-------|-------------|
 | **Frontend** | React 19, Vite 8, TypeScript, Tailwind CSS 4, Framer Motion, Firebase Auth |
-| **Backend** | Node.js, Express 5, TypeScript, Google Gemini AI (`@google/genai`), Firebase Admin SDK |
-| **Security** | Helmet.js, express-rate-limit, hpp, httpOnly cookies, Firebase ID Token verification |
+| **Backend** | Node.js, Express 5, TypeScript, Google Gemini AI (`@google/genai` — gemini-2.5-flash), Firebase Admin SDK |
+| **Database** | Firestore (`users/{uid}/logs` subcollection with real-time listeners) |
+| **Security** | Helmet.js, express-rate-limit, hpp, httpOnly cookies, Firebase ID Token verification, env-gated CORS |
 | **Testing** | Vitest, React Testing Library, Supertest, @testing-library/user-event |
-| **DevOps** | Docker (multi-stage), Google Cloud Run, Artifact Registry |
+| **DevOps** | Docker (multi-stage, node:20-alpine), Google Cloud Run, Artifact Registry |
 
 ---
 

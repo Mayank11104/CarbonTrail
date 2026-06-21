@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, ArrowLeft, Train, Utensils, Zap, ShoppingBag } from 'lucide-react';
+import { X, Check, ArrowLeft } from 'lucide-react';
 import { saveLog } from '../api/logs';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../config/firebase';
 import { APP_CONSTANTS } from '../../../config/constants';
+import { CATEGORY_CONFIG } from '../../../config/categories';
 
 export type LogCategory = 'transport' | 'food' | 'energy' | 'shopping' | 'all' | null;
 
@@ -13,45 +14,6 @@ interface LogModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const CATEGORY_CONFIG = {
-  transport: {
-    title: 'Transport',
-    Icon: Train,
-    color: '#40916C',
-    blobColor: 'bg-[#94D4B1]/20',
-    textColor: 'text-[#40916C]',
-    options: ['Car', 'Bus', 'Metro', 'Walk/Bike'],
-    inputLabel: 'Distance (km)',
-  },
-  food: {
-    title: 'Food',
-    Icon: Utensils,
-    color: '#C07B52',
-    blobColor: 'bg-[#E8D5B0]/30',
-    textColor: 'text-[#C07B52]',
-    options: ['Beef/Lamb', 'Chicken/Pork', 'Vegetarian', 'Vegan'],
-    inputLabel: 'Meals',
-  },
-  energy: {
-    title: 'Energy',
-    Icon: Zap,
-    color: '#D97706',
-    blobColor: 'bg-[#FFD180]/20',
-    textColor: 'text-[#D97706]',
-    options: ['AC (Hours)', 'Heater (Hours)', 'General Usage'],
-    inputLabel: 'Hours / Amount',
-  },
-  shopping: {
-    title: 'Shopping',
-    Icon: ShoppingBag,
-    color: '#1B4332',
-    blobColor: 'bg-[#95D5B2]/15',
-    textColor: 'text-[#1B4332]',
-    options: ['Electronics', 'Clothing', 'Home Goods', 'Other'],
-    inputLabel: 'Items',
-  },
-};
 
 const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
   const [user] = useAuthState(auth);
@@ -111,7 +73,6 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
     e.preventDefault();
     setAmountError('');
 
-    // Validate
     if (!currentCategory || !user) return;
     if (!amount.trim()) {
       setAmountError('Please enter a value.');
@@ -139,8 +100,8 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
         onClose();
         setSubmitted(false);
       }, APP_CONSTANTS.LOGS.SUCCESS_TIMEOUT_MS);
-    } catch (error) {
-      // Failed to save log
+    } catch {
+      // Save failed — silently ignored; user can retry
     }
     setIsSubmitting(false);
   };
@@ -156,10 +117,8 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
           transition={{ duration: 0.2 }}
           onClick={handleBackdropClick}
         >
-          {/* Backdrop — exactly like AuthModal */}
           <div className="absolute inset-0 bg-[#1C1C1E]/40 backdrop-blur-sm" />
 
-          {/* Modal shell — exactly like AuthModal */}
           <motion.div
             className="relative bg-[#F5F3EF] rounded-3xl shadow-2xl w-full overflow-hidden border border-[#E8D5B0]/40 z-10"
             style={{ maxWidth: '500px', height: '500px' }}
@@ -180,7 +139,6 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
                   exit={{ opacity: 0, x: -16 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {/* Close button */}
                   <button
                     onClick={onClose}
                     aria-label="Close modal"
@@ -189,7 +147,6 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
                     <X className="w-4 h-4" aria-hidden="true" />
                   </button>
 
-                  {/* Header */}
                   <div className="pt-8 pb-2 px-8">
                     <div className="flex items-center gap-2.5 mb-1">
                       <span className="text-xl">🌿</span>
@@ -200,7 +157,6 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
                     <p className="text-[13px] text-[#1C1C1E]/45 font-medium ml-9">What would you like to log?</p>
                   </div>
 
-                  {/* Cards grid — styled exactly like dashboard data tiles */}
                   <div className="p-6 grid grid-cols-2 gap-3">
                     {(['transport', 'food', 'energy', 'shopping'] as const).map((cat, i) => {
                       const { Icon, blobColor, textColor, title } = CATEGORY_CONFIG[cat];
@@ -213,13 +169,9 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
                           onClick={() => handleCategorySelect(cat)}
                           className="rounded-xl p-5 bg-[#FAFAF8] text-left flex flex-col justify-between h-32 border border-outline-variant/30 shadow-sm relative overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.97]"
                         >
-                          {/* Decorative blob — same as dashboard */}
                           <div className={`absolute top-0 right-0 w-16 h-16 ${blobColor} rounded-bl-full -translate-y-3 translate-x-3 pointer-events-none`} />
                           <Icon className={`w-6 h-6 ${textColor}`} />
-                          <span
-                            className="font-bold text-[13px] text-[#1C1C1E] uppercase tracking-wider"
-                            style={{ fontFamily: 'var(--font-display)' }}
-                          >
+                          <span className="font-bold text-[13px] text-[#1C1C1E] uppercase tracking-wider" style={{ fontFamily: 'var(--font-display)' }}>
                             {title}
                           </span>
                         </motion.button>
@@ -262,7 +214,6 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
                   exit={{ opacity: 0, x: 16 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {/* Back + Close */}
                   <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
                     <button
                       onClick={handleBack}
@@ -280,7 +231,6 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
                     </button>
                   </div>
 
-                  {/* Header — same card style as dashboard */}
                   <div className="pt-8 px-8 pb-5">
                     <div className="rounded-xl p-5 bg-[#FAFAF8] border border-outline-variant/30 shadow-sm relative overflow-hidden">
                       <div className={`absolute top-0 right-0 w-20 h-20 ${config?.blobColor} rounded-bl-full -translate-y-4 translate-x-4 pointer-events-none`} />
@@ -293,7 +243,6 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
                   </div>
 
                   <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-5">
-                    {/* Type selector */}
                     <div>
                       <label className="block text-[11px] font-bold uppercase tracking-widest text-[#1C1C1E]/35 mb-2.5">Type</label>
                       <div className="grid grid-cols-2 gap-2">
@@ -315,7 +264,6 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
                       </div>
                     </div>
 
-                    {/* Amount input */}
                     <div style={{ marginBottom: '24px' }}>
                       <label className="block text-[11px] font-bold uppercase tracking-widest text-[#1C1C1E]/35 mb-2.5">
                         {config?.inputLabel}
@@ -343,7 +291,6 @@ const LogModal = ({ category, isOpen, onClose }: LogModalProps) => {
                       )}
                     </div>
 
-                    {/* Submit */}
                     <button
                       type="submit"
                       disabled={isSubmitting}

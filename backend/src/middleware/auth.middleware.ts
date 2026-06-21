@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
+import type { DecodedIdToken } from 'firebase-admin/auth';
 import { auth } from '../config/firebase';
 
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: DecodedIdToken;
 }
 
 export const verifyToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -18,8 +19,7 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
     const decodedToken = await auth.verifyIdToken(token);
     req.user = decodedToken;
     next();
-  } catch (error) {
-    // Auth error
+  } catch {
     res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };

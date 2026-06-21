@@ -1,6 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Train, Utensils, Zap, ShoppingBag, TrendingUp, Calendar, Info } from 'lucide-react';
+import { X, TrendingUp, Calendar, Info } from 'lucide-react';
 import type { CarbonLog } from '../api/logs';
+import { CATEGORY_CONFIG } from '../../../config/categories';
+import { APP_CONSTANTS } from '../../../config/constants';
 
 interface TrendsModalProps {
   isOpen: boolean;
@@ -8,42 +10,15 @@ interface TrendsModalProps {
   weeklyLogs: CarbonLog[];
 }
 
-const CATEGORY_CONFIG = {
-  transport: {
-    title: 'Transport',
-    Icon: Train,
-    color: '#40916C',
-    bgColor: 'bg-[#40916C]/10',
-  },
-  food: {
-    title: 'Food',
-    Icon: Utensils,
-    color: '#C07B52',
-    bgColor: 'bg-[#C07B52]/10',
-  },
-  energy: {
-    title: 'Energy',
-    Icon: Zap,
-    color: '#D97706',
-    bgColor: 'bg-[#D97706]/10',
-  },
-  shopping: {
-    title: 'Shopping',
-    Icon: ShoppingBag,
-    color: '#1B4332',
-    bgColor: 'bg-[#1B4332]/10',
-  },
-} as const;
-
 export const TrendsModal = ({ isOpen, onClose, weeklyLogs }: TrendsModalProps) => {
-  // Generate the last 7 days keys & names
+  const { DAILY_BUDGET_KG } = APP_CONSTANTS.LOGS;
+
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - i);
     return d;
   }).reverse();
 
-  // Calculate daily totals
   const dailyTotals = last7Days.map((date) => {
     const dateStr = date.toDateString();
     const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
@@ -54,17 +29,9 @@ export const TrendsModal = ({ isOpen, onClose, weeklyLogs }: TrendsModalProps) =
     return { dayName, dayNum, total };
   });
 
-  const dailyBudget = 15; // kg CO2 budget
-  // Cap the minimum chart scale at the daily budget to keep budget line within bounds
-  const maxDaily = Math.max(...dailyTotals.map((d) => d.total), dailyBudget);
+  const maxDaily = Math.max(...dailyTotals.map((d) => d.total), DAILY_BUDGET_KG);
 
-  // Calculate category totals over 7 days
-  const categoryTotals = {
-    transport: 0,
-    food: 0,
-    energy: 0,
-    shopping: 0,
-  };
+  const categoryTotals = { transport: 0, food: 0, energy: 0, shopping: 0 };
   let totalWeeklyEmissions = 0;
 
   weeklyLogs.forEach((log) => {
@@ -76,7 +43,7 @@ export const TrendsModal = ({ isOpen, onClose, weeklyLogs }: TrendsModalProps) =
   });
 
   const weeklyAverage = Number((totalWeeklyEmissions / 7).toFixed(1));
-  const underBudgetDays = dailyTotals.filter((d) => d.total <= dailyBudget).length;
+  const underBudgetDays = dailyTotals.filter((d) => d.total <= DAILY_BUDGET_KG).length;
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();
@@ -93,7 +60,6 @@ export const TrendsModal = ({ isOpen, onClose, weeklyLogs }: TrendsModalProps) =
           transition={{ duration: 0.2 }}
           onClick={handleBackdropClick}
         >
-          {/* Internal CSS */}
           <style>{`
             .trends-modal-container {
               max-width: 500px;
@@ -200,7 +166,8 @@ export const TrendsModal = ({ isOpen, onClose, weeklyLogs }: TrendsModalProps) =
               box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
               z-index: 50;
             }
-            .chart-bar-item:hover .chart-tooltip {
+            .chart-bar-item:hover .chart-tooltip,
+            .chart-bar-item:focus-within .chart-tooltip {
               opacity: 1 !important;
               transform: translateY(0);
             }
@@ -219,10 +186,8 @@ export const TrendsModal = ({ isOpen, onClose, weeklyLogs }: TrendsModalProps) =
             }
           `}</style>
 
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-[#1C1C1E]/40 backdrop-blur-sm" />
 
-          {/* Modal Container */}
           <motion.div
             className="relative bg-[#F5F3EF] rounded-3xl shadow-2xl w-full overflow-hidden border border-[#E8D5B0]/40 z-10 trends-modal-container"
             initial={{ opacity: 0, y: 32, scale: 0.96 }}
@@ -231,19 +196,18 @@ export const TrendsModal = ({ isOpen, onClose, weeklyLogs }: TrendsModalProps) =
             transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button */}
             <button
               onClick={onClose}
+              aria-label="Close trends modal"
               className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white border border-[#E8D5B0]/40 flex items-center justify-center text-[#1C1C1E]/30 hover:text-[#1C1C1E]/70 hover:border-[#E8D5B0] transition-all z-20"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
 
-            {/* Header */}
             <div className="pt-8 pb-4 px-8 border-b border-[#E8D5B0]/20">
               <div className="flex items-center gap-2.5 mb-1">
                 <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <TrendingUp className="w-4 h-4" />
+                  <TrendingUp className="w-4 h-4" aria-hidden="true" />
                 </div>
                 <h2 className="text-[20px] font-bold text-[#1C1C1E] tracking-tight font-display">
                   Emissions Trends
@@ -254,37 +218,35 @@ export const TrendsModal = ({ isOpen, onClose, weeklyLogs }: TrendsModalProps) =
               </p>
             </div>
 
-            {/* Content Scroll Area */}
             <div className="trends-scroll-area">
-              {/* Daily Bar Chart */}
               <div>
                 <h3 className="text-[11px] font-bold text-[#1C1C1E]/40 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" />
+                  <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
                   7-Day Emissions History
                 </h3>
 
-                <div className="chart-container">
-                  {/* Budget line representation */}
+                <div className="chart-container" role="img" aria-label="7-day emissions bar chart">
                   <div
                     className="budget-line"
-                    style={{ bottom: `${(dailyBudget / maxDaily) * 100}%` }}
+                    style={{ bottom: `${(DAILY_BUDGET_KG / maxDaily) * 100}%` }}
+                    aria-hidden="true"
                   >
-                    <span className="budget-line-label">
-                      Budget Limit (15 kg)
-                    </span>
+                    <span className="budget-line-label">Budget Limit ({DAILY_BUDGET_KG} kg)</span>
                   </div>
 
                   {dailyTotals.map((d, i) => {
                     const heightPercent = `${(d.total / maxDaily) * 100}%`;
-                    const isOver = d.total > dailyBudget;
+                    const isOver = d.total > DAILY_BUDGET_KG;
                     return (
-                      <div key={i} className="chart-bar-item">
-                        {/* Tooltip */}
-                        <div className="chart-tooltip">
+                      <div
+                        key={i}
+                        className="chart-bar-item"
+                        aria-label={`${d.dayName} ${d.dayNum}: ${d.total.toFixed(1)} kg CO2${isOver ? ', over budget' : ', within budget'}`}
+                        tabIndex={0}
+                      >
+                        <div className="chart-tooltip" aria-hidden="true">
                           {d.total.toFixed(1)} kg CO2
                         </div>
-
-                        {/* Bar */}
                         <motion.div
                           className={`chart-bar ${isOver ? 'over-budget' : 'under-budget'}`}
                           style={{ height: heightPercent }}
@@ -292,61 +254,38 @@ export const TrendsModal = ({ isOpen, onClose, weeklyLogs }: TrendsModalProps) =
                           animate={{ scaleY: 1 }}
                           transition={{ delay: i * 0.05, duration: 0.5, ease: 'easeOut' }}
                         />
-
-                        {/* Labels */}
-                        <span className="chart-label-day">
-                          {d.dayName}
-                        </span>
-                        <span className="chart-label-date">
-                          {d.dayNum}
-                        </span>
+                        <span className="chart-label-day">{d.dayName}</span>
+                        <span className="chart-label-date">{d.dayNum}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Stats Grid */}
               <div className="trends-stats-grid">
                 <div className="bg-white/50 border border-[#E8D5B0]/30 rounded-2xl p-3 text-center">
-                  <p className="text-[9px] font-bold text-[#1C1C1E]/40 uppercase tracking-wider mb-0.5">
-                    Weekly Total
-                  </p>
-                  <p className="text-[18px] font-extrabold text-[#1C1C1E] tracking-tight">
-                    {totalWeeklyEmissions.toFixed(1)}
-                  </p>
+                  <p className="text-[9px] font-bold text-[#1C1C1E]/40 uppercase tracking-wider mb-0.5">Weekly Total</p>
+                  <p className="text-[18px] font-extrabold text-[#1C1C1E] tracking-tight">{totalWeeklyEmissions.toFixed(1)}</p>
                   <p className="text-[9px] text-[#1C1C1E]/50 font-medium">kg CO2</p>
                 </div>
-
                 <div className="bg-white/50 border border-[#E8D5B0]/30 rounded-2xl p-3 text-center">
-                  <p className="text-[9px] font-bold text-[#1C1C1E]/40 uppercase tracking-wider mb-0.5">
-                    Daily Average
-                  </p>
-                  <p className="text-[18px] font-extrabold text-[#1C1C1E] tracking-tight">
-                    {weeklyAverage}
-                  </p>
+                  <p className="text-[9px] font-bold text-[#1C1C1E]/40 uppercase tracking-wider mb-0.5">Daily Average</p>
+                  <p className="text-[18px] font-extrabold text-[#1C1C1E] tracking-tight">{weeklyAverage}</p>
                   <p className="text-[9px] text-[#1C1C1E]/50 font-medium">kg / day</p>
                 </div>
-
                 <div className="bg-white/50 border border-[#E8D5B0]/30 rounded-2xl p-3 text-center">
-                  <p className="text-[9px] font-bold text-[#1C1C1E]/40 uppercase tracking-wider mb-0.5">
-                    Budget Days
-                  </p>
-                  <p className="text-[18px] font-extrabold text-primary tracking-tight">
-                    {underBudgetDays}/7
-                  </p>
+                  <p className="text-[9px] font-bold text-[#1C1C1E]/40 uppercase tracking-wider mb-0.5">Budget Days</p>
+                  <p className="text-[18px] font-extrabold text-primary tracking-tight">{underBudgetDays}/7</p>
                   <p className="text-[9px] text-[#1C1C1E]/50 font-medium">under limit</p>
                 </div>
               </div>
 
-              {/* Category Breakdown list */}
               <div>
                 <h3 className="text-[11px] font-bold text-[#1C1C1E]/40 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5" />
+                  <Info className="w-3.5 h-3.5" aria-hidden="true" />
                   Category Breakdown (7 Days)
                 </h3>
-
-                <div className="space-y-2">
+                <ul className="space-y-2" role="list" aria-label="Carbon emissions by category">
                   {(Object.keys(CATEGORY_CONFIG) as Array<keyof typeof CATEGORY_CONFIG>).map((key) => {
                     const conf = CATEGORY_CONFIG[key];
                     const Icon = conf.Icon;
@@ -354,11 +293,10 @@ export const TrendsModal = ({ isOpen, onClose, weeklyLogs }: TrendsModalProps) =
                     const percentage = totalWeeklyEmissions > 0
                       ? Math.round((amount / totalWeeklyEmissions) * 100)
                       : 0;
-
                     return (
-                      <div key={key} className="flex items-center gap-3 bg-white/40 border border-[#E8D5B0]/20 p-2.5 rounded-2xl">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white`} style={{ backgroundColor: conf.color }}>
-                          <Icon className="w-4 h-4" />
+                      <li key={key} className="flex items-center gap-3 bg-white/40 border border-[#E8D5B0]/20 p-2.5 rounded-2xl">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: conf.color }}>
+                          <Icon className="w-4 h-4" aria-hidden="true" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center mb-0.5">
@@ -367,8 +305,7 @@ export const TrendsModal = ({ isOpen, onClose, weeklyLogs }: TrendsModalProps) =
                               {amount.toFixed(1)} kg ({percentage}%)
                             </span>
                           </div>
-                          {/* Progress Bar */}
-                          <div className="h-1.5 w-full bg-neutral-200/50 rounded-full overflow-hidden">
+                          <div className="h-1.5 w-full bg-neutral-200/50 rounded-full overflow-hidden" role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100} aria-label={`${conf.title} share`}>
                             <motion.div
                               className="h-full rounded-full"
                               style={{ backgroundColor: conf.color }}
@@ -378,14 +315,13 @@ export const TrendsModal = ({ isOpen, onClose, weeklyLogs }: TrendsModalProps) =
                             />
                           </div>
                         </div>
-                      </div>
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               </div>
             </div>
 
-            {/* Footer */}
             <div className="p-4 bg-white/30 border-t border-[#E8D5B0]/20 flex justify-end">
               <button
                 onClick={onClose}

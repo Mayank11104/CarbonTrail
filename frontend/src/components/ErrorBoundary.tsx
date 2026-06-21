@@ -11,10 +11,6 @@ interface State {
   error: Error | null;
 }
 
-/**
- * Global Error Boundary to catch UI crashes and prevent the white screen of death.
- * This heavily boosts the Code Quality evaluation score.
- */
 class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
