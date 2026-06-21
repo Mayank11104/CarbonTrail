@@ -14,8 +14,12 @@ import aiRoutes from './features/ai/ai.routes';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Security Headers (Helmet)
-app.use(helmet());
+// Security Headers (Helmet) - configured to allow HTTP access via IP address
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginOpenerPolicy: false,
+  hsts: false
+}));
 
 // Rate Limiting (DoS prevention)
 const limiter = rateLimit({
