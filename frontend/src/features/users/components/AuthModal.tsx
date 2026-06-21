@@ -167,7 +167,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
             {/* Header */}
             <div className="pt-8 pb-5 px-8 text-center">
               <div className="flex items-center justify-center gap-2 mb-4">
-                <img src="/logo.svg" alt="CarbonTrail" className="w-8 h-8" />
+                <img src="/icon.svg" alt="CarbonTrail" className="w-8 h-8" />
                 <span
                   className="font-semibold text-lg tracking-tight"
                   style={{ fontFamily: "var(--font-display)" }}
