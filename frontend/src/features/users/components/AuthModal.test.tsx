@@ -1,7 +1,9 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
 import AuthModal from './AuthModal'
+import { fireEvent } from '@testing-library/react'
 
 // Mock framer-motion to avoid animation issues in tests
 vi.mock('framer-motion', async () => {
@@ -17,6 +19,11 @@ vi.mock('framer-motion', async () => {
   }
 })
 
+// Helper to wrap with Router context
+const renderWithRouter = (ui: React.ReactElement) => {
+  return render(<MemoryRouter>{ui}</MemoryRouter>)
+}
+
 describe('AuthModal', () => {
   const mockClose = vi.fn()
 
@@ -25,14 +32,14 @@ describe('AuthModal', () => {
   })
 
   it('renders nothing when isOpen is false', () => {
-    const { container } = render(
+    const { container } = renderWithRouter(
       <AuthModal isOpen={false} onClose={mockClose} />
     )
     expect(container.innerHTML).toBe('')
   })
 
   it('renders login form when opened in login mode', () => {
-    render(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
+    renderWithRouter(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
 
     expect(screen.getByText('Welcome back')).toBeInTheDocument()
     expect(screen.getByText('Log in to continue your journey')).toBeInTheDocument()
@@ -41,7 +48,7 @@ describe('AuthModal', () => {
   })
 
   it('renders signup form when opened in signup mode', () => {
-    render(<AuthModal isOpen={true} onClose={mockClose} initialMode="signup" />)
+    renderWithRouter(<AuthModal isOpen={true} onClose={mockClose} initialMode="signup" />)
 
     expect(screen.getByText('Start your trail')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Your name')).toBeInTheDocument()
@@ -50,7 +57,7 @@ describe('AuthModal', () => {
 
   it('switches between login and signup modes', async () => {
     const user = userEvent.setup()
-    render(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
+    renderWithRouter(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
 
     // Start in login — no name field
     expect(screen.queryByPlaceholderText('Your name')).not.toBeInTheDocument()
@@ -65,7 +72,7 @@ describe('AuthModal', () => {
 
   it('validates required fields on submit', async () => {
     const user = userEvent.setup()
-    render(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
+    renderWithRouter(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
 
     // Submit empty form — filter to the submit button specifically
     const allLoginBtns = screen.getAllByRole('button', { name: /log in/i })
@@ -77,7 +84,7 @@ describe('AuthModal', () => {
   })
 
   it('validates email format', async () => {
-    render(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
+    renderWithRouter(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
 
     const emailInput = screen.getByPlaceholderText('you@example.com')
     const passwordInput = screen.getByPlaceholderText('••••••••')
@@ -95,7 +102,7 @@ describe('AuthModal', () => {
 
   it('validates password minimum length', async () => {
     const user = userEvent.setup()
-    render(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
+    renderWithRouter(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
 
     await user.type(screen.getByPlaceholderText('you@example.com'), 'test@test.com')
     await user.type(screen.getByPlaceholderText('••••••••'), '123')
@@ -109,7 +116,7 @@ describe('AuthModal', () => {
 
   it('toggles password visibility', async () => {
     const user = userEvent.setup()
-    render(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
+    renderWithRouter(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
 
     const passwordInput = screen.getByPlaceholderText('••••••••')
     expect(passwordInput).toHaveAttribute('type', 'password')
@@ -124,7 +131,7 @@ describe('AuthModal', () => {
 
   it('clears errors when user starts typing', async () => {
     const user = userEvent.setup()
-    render(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
+    renderWithRouter(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
 
     // Submit empty to trigger errors — use the submit button specifically
     const allLoginBtns = screen.getAllByRole('button', { name: /log in/i })
@@ -139,7 +146,7 @@ describe('AuthModal', () => {
 
   it('shows forgot password link only in login mode', async () => {
     const user = userEvent.setup()
-    render(
+    renderWithRouter(
       <AuthModal isOpen={true} onClose={mockClose} initialMode="login" />
     )
     expect(screen.getByText('Forgot password?')).toBeInTheDocument()
@@ -153,7 +160,7 @@ describe('AuthModal', () => {
   })
 
   it('shows Google sign-in button', () => {
-    render(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
+    renderWithRouter(<AuthModal isOpen={true} onClose={mockClose} initialMode="login" />)
     expect(screen.getByText('Continue with Google')).toBeInTheDocument()
   })
 })
