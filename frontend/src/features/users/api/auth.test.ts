@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { logoutUser } from './auth';
 
 // Mock Firebase auth
@@ -11,7 +11,7 @@ vi.mock('../../../config/firebase', () => ({
 
 // Mock API calls
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+vi.stubGlobal('fetch', mockFetch);
 
 // Mock Firebase auth functions
 vi.mock('firebase/auth', () => ({
